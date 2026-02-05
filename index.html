@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Log Bouquet</title>
+    <style>
+        :root {
+            --bg-color: #4a0404; /* ヴィンテージ・ボルドー */
+            --text-color: #f5f5dc; /* シャンパンゴールド（ベージュ系） */
+            --accent-color: #d4af37;
+            --input-bg: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* アネモネの背景装飾 */
+        body::before {
+            content: "🌸"; /* 絵文字ですが、のちに画像を透過させるベース */
+            position: fixed;
+            bottom: -50px;
+            right: -20px;
+            font-size: 200px;
+            opacity: 0.05;
+            pointer-events: none;
+        }
+
+        header {
+            padding: 40px 20px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        header h1 { font-size: 1.2rem; margin: 0; font-weight: 300; letter-spacing: 2px; }
+
+        #log-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            scroll-behavior: smooth;
+        }
+
+        .date-divider {
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            margin: 30px 0 10px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            padding-bottom: 5px;
+        }
+
+        .log-item {
+            margin-bottom: 15px;
+            line-height: 1.6;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .time { font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-right: 10px; }
+
+        /* 入力エリア */
+        .input-area {
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            background: var(--input-bg);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 10px 15px;
+            color: #white;
+            outline: none;
+        }
+
+        button {
+            background: none;
+            border: none;
+            color: var(--accent-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* HashPhotos風サイドバー（簡易版） */
+        #side-nav {
+            position: fixed;
+            right: 0;
+            top: 100px;
+            bottom: 100px;
+            width: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.6rem;
+            color: var(--accent-color);
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Log Bouquet</h1>
+    <span style="font-size: 1.2rem;">🔖</span>
+</header>
+
+<div id="log-container">
+    </div>
+
+<div id="side-nav">
+    <div>2026</div>
+    <div style="margin: 10px 0;">|</div>
+    <div>FEB</div>
+</div>
+
+<div class="input-area">
+    <input type="text" id="log-input" placeholder="いまの気持ちを放流する...">
+    <button onclick="addLog()">✦</button>
+</div>
+
+<script>
+    const input = document.getElementById('log-input');
+    const container = document.getElementById('log-container');
+
+    function addLog() {
+        const text = input.value.trim();
+        if (!text) return;
+
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()}`;
+        const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        // 日付見出しのチェック
+        if (!document.getElementById(dateStr)) {
+            const divider = document.createElement('div');
+            divider.className = 'date-divider';
+            divider.id = dateStr;
+            divider.innerText = dateStr;
+            container.appendChild(divider);
+        }
+
+        const item = document.createElement('div');
+        item.className = 'log-item';
+        item.innerHTML = `<span class="time">${timeStr}</span>${text}`;
+        
+        container.appendChild(item);
+        input.value = '';
+        container.scrollTop = container.scrollHeight;
+
+        // ブラウザ内に保存（簡易保存機能）
+        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        logs.push({ date: dateStr, time: timeStr, text: text });
+        localStorage.setItem('myLogs', JSON.stringify(logs));
+    }
+
+    // 読み込み時に過去ログを表示
+    window.onload = () => {
+        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        logs.forEach(log => {
+            // （簡易的に再表示するロジックをここに）
+        });
+    };
+
+    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') addLog(); });
+</script>
+
+</body>
+</html>
