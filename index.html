@@ -173,15 +173,23 @@
     }
 
     // 読み込み時に過去ログを表示
+    // 読み込み時に過去ログを表示（ここを強化しました！）
     window.onload = () => {
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         logs.forEach(log => {
-            // （簡易的に再表示するロジックをここに）
+            // 日付見出しのチェック
+            if (!document.getElementById(log.date)) {
+                const divider = document.createElement('div');
+                divider.className = 'date-divider';
+                divider.id = log.date;
+                divider.innerText = log.date;
+                container.appendChild(divider);
+            }
+            // ログの再表示
+            const item = document.createElement('div');
+            item.className = 'log-item';
+            item.innerHTML = `<span class="time">${log.time}</span>${log.text}`;
+            container.appendChild(item);
         });
+        container.scrollTop = container.scrollHeight;
     };
-
-    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') addLog(); });
-</script>
-
-</body>
-</html>
