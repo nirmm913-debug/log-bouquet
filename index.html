@@ -33,17 +33,23 @@
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
         header h1 { font-size: 1.1rem; font-weight: 300; letter-spacing: 2px; margin: 0; }
-        #log-container { flex: 1; overflow-y: auto; padding: 20px; scroll-behavior: smooth; }
-        .date-header { 
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 0.7rem; color: var(--accent-color); margin: 30px 0 10px; opacity: 0.7; 
+        #calendar-index {
+            width: 45px; background: rgba(0, 0, 0, 0.2);
+            display: flex; flex-direction: column; align-items: center; padding-top: 50px;
+            overflow-y: auto; border-left: 1px solid rgba(255,255,255,0.05);
+            font-family: monospace; font-size: 0.6rem; color: var(--accent-color);
         }
-        .share-day-btn { cursor: pointer; padding: 5px; font-size: 0.9rem; }
+        .index-item { padding: 10px 0; width: 100%; text-align: center; opacity: 0.5; }
+        #log-container { flex: 1; overflow-y: auto; padding: 20px; scroll-behavior: smooth; }
         .log-item { margin-bottom: 20px; }
         .log-content { display: flex; justify-content: space-between; align-items: flex-start; }
         .log-body { flex: 1; font-size: 0.95rem; line-height: 1.6; }
         .time-tag { font-size: 0.7rem; opacity: 0.4; margin-right: 8px; }
-        .log-img { display: block; max-width: 120px; max-height: 120px; border-radius: 8px; margin-top: 8px; }
+        /* 📷 サムネイルのスタイル */
+        .log-img { 
+            display: block; max-width: 120px; max-height: 120px; 
+            border-radius: 8px; margin-top: 8px; border: 1px solid rgba(255,255,255,0.1); 
+        }
         .delete-btn { color: var(--accent-color); opacity: 0.3; padding-left: 15px; }
         .input-area {
             padding: 15px 20px 40px; background: rgba(0,0,0,0.3);
@@ -53,14 +59,9 @@
             flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
             border-radius: 20px; padding: 12px 15px; color: white; outline: none;
         }
-        #img-preview { width: 40px; height: 40px; border-radius: 5px; object-fit: cover; display: none; }
-        #calendar-index {
-            width: 45px; background: rgba(0, 0, 0, 0.2);
-            display: flex; flex-direction: column; align-items: center; padding-top: 50px;
-            overflow-y: auto; border-left: 1px solid rgba(255,255,255,0.05);
-            font-family: monospace; font-size: 0.6rem; color: var(--accent-color);
+        #img-preview { 
+            width: 40px; height: 40px; border-radius: 5px; object-fit: cover; display: none; 
         }
-        .index-item { padding: 10px 0; width: 100%; text-align: center; opacity: 0.5; }
     </style>
 </head>
 <body>
@@ -70,7 +71,9 @@
         <h1>Log Bouquet</h1>
         <div style="cursor:pointer; opacity:0.6;" onclick="toggleSettings()">＋</div>
     </header>
+
     <div id="log-container"></div>
+
     <div class="input-area">
         <label style="cursor:pointer; font-size:1.2rem;">
             📷<input type="file" id="img-input" accept="image/*" style="display:none;" onchange="previewImg(this)">
@@ -80,27 +83,27 @@
         <button style="background:none; border:none; color:var(--accent-color); font-size:1.5rem;" onclick="addLog()">✦</button>
     </div>
 </div>
+
 <div id="calendar-index"></div>
 
 <script>
     let currentBase64 = "";
 
-    function toggleSettings() { alert("設定機能（テーマ変更など）は必要に応じてここに追加できます"); }
-
     function previewImg(input) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
             reader.onload = function(e) {
+                // 画像をリサイズして容量を節約
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
-                    const MAX_SIZE = 400;
+                    const MAX_SIZE = 400; // 長辺を400pxに制限
                     let w = img.width, h = img.height;
                     if (w > h) { if (w > MAX_SIZE) { h *= MAX_SIZE / w; w = MAX_SIZE; } }
                     else { if (h > MAX_SIZE) { w *= MAX_SIZE / h; h = MAX_SIZE; } }
                     canvas.width = w; canvas.height = h;
                     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    currentBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                    currentBase64 = canvas.toDataURL('image/jpeg', 0.7); // 画質0.7のJPEGに変換
                     document.getElementById('img-preview').src = currentBase64;
                     document.getElementById('img-preview').style.display = 'block';
                 };
@@ -111,8 +114,7 @@
     }
 
     function addLog() {
-        const input = document.getElementById('log-input');
-        const text = input.value.trim();
+        const text = document.getElementById('log-input').value.trim();
         if (!text && !currentBase64) return;
         const now = new Date();
         const d = `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()}`;
@@ -120,28 +122,13 @@
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         logs.push({ d, t, text, img: currentBase64 });
         localStorage.setItem('myLogs', JSON.stringify(logs));
-        input.value = '';
+        
+        // リセット
+        document.getElementById('log-input').value = '';
+        document.getElementById('img-input').value = '';
         document.getElementById('img-preview').style.display = 'none';
         currentBase64 = "";
         refresh();
-    }
-
-    // 🚀 特定の日のログをまとめて外部へ送る機能
-    async function shareDay(dateStr) {
-        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        const dayLogs = logs.filter(l => l.d === dateStr);
-        if (dayLogs.length === 0) return;
-
-        const fullText = `【Log Bouquet: ${dateStr}】\n\n` + 
-            dayLogs.map(l => `${l.t} ${l.text}`).join('\n');
-
-        if (navigator.share) {
-            try {
-                await navigator.share({ title: dateStr, text: fullText });
-            } catch (err) { console.log("Share failed", err); }
-        } else {
-            alert("このブラウザは共有機能に対応していません。");
-        }
     }
 
     function refresh() {
@@ -153,11 +140,11 @@
 
         logs.forEach((l, i) => {
             if (l.d !== lastDate) {
-                const header = document.createElement('div');
-                header.className = 'date-header';
-                header.id = 'date-' + l.d;
-                header.innerHTML = `<span>${l.d}</span><span class="share-day-btn" onclick="shareDay('${l.d}')">📤</span>`;
-                container.appendChild(header);
+                const div = document.createElement('div');
+                div.id = 'date-' + l.d;
+                div.style.cssText = "font-size:0.7rem; color:var(--accent-color); margin:20px 0 10px; opacity:0.5;";
+                div.innerText = l.d;
+                container.appendChild(div);
                 lastDate = l.d;
                 dateList.push(l.d);
             }
@@ -194,7 +181,14 @@
         refresh();
     };
 
-    window.onload = () => { refresh(); };
+    window.onload = () => {
+        const theme = JSON.parse(localStorage.getItem('myTheme'));
+        if(theme) {
+            document.documentElement.style.setProperty('--bg-color', theme.bg);
+            document.documentElement.style.setProperty('--text-color', theme.txt);
+        }
+        refresh();
+    };
 </script>
 </body>
 </html>
