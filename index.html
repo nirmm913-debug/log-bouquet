@@ -38,8 +38,23 @@
             margin: 30px 0 10px; border-bottom: 1px solid rgba(212, 175, 55, 0.3);
             padding-bottom: 5px;
         }
-        .log-item { margin-bottom: 15px; line-height: 1.6; }
+        .log-item { 
+            margin-bottom: 15px; 
+            line-height: 1.6; 
+            display: flex; 
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .log-content { flex: 1; }
         .time { font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-right: 10px; }
+        .delete-btn {
+            font-size: 0.9rem;
+            color: var(--accent-color);
+            opacity: 0.4;
+            padding: 0 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
         .input-area {
             padding: 20px; background: rgba(0,0,0,0.2);
             backdrop-filter: blur(10px); display: flex; gap: 10px;
@@ -75,8 +90,8 @@
     const container = document.getElementById('log-container');
     const button = document.getElementById('send-btn');
 
-    // 画面にログを表示するだけの機能
-    function render(date, time, text) {
+    // 画面にログを表示し、削除ボタン（ペンマーク）を付ける
+    function render(date, time, text, index) {
         if (!document.getElementById(date)) {
             const d = document.createElement('div');
             d.className = 'date-divider';
@@ -86,12 +101,17 @@
         }
         const item = document.createElement('div');
         item.className = 'log-item';
-        item.innerHTML = `<span class="time">${time}</span>${text}`;
+        item.innerHTML = `
+            <div class="log-content">
+                <span class="time">${time}</span>${text}
+            </div>
+            <div class="delete-btn" onclick="deleteLog(${index})">✎</div>
+        `;
         container.appendChild(item);
         container.scrollTop = container.scrollHeight;
     }
 
-    // 保存して表示する機能
+    // 保存して再描画
     function saveAndSend() {
         const text = input.value.trim();
         if (!text) return;
@@ -100,24 +120,34 @@
         const dStr = `${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()}`;
         const tStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-        render(dStr, tStr, text);
-
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         logs.push({ date: dStr, time: tStr, text: text });
         localStorage.setItem('myLogs', JSON.stringify(logs));
 
         input.value = '';
+        refresh(); // 画面を書き直す
     }
 
-    // ボタンとEnterキーに機能を割り当て
+    // 削除機能
+    window.deleteLog = function(index) {
+        if (!confirm("このログを削除しますか？")) return;
+        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        logs.splice(index, 1); // 指定した番号のログを消す
+        localStorage.setItem('myLogs', JSON.stringify(logs));
+        refresh(); // 画面を書き直す
+    };
+
+    // 画面をリフレッシュする機能
+    function refresh() {
+        container.innerHTML = '';
+        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        logs.forEach((log, index) => render(log.date, log.time, log.text, index));
+    }
+
     button.onclick = saveAndSend;
     input.onkeypress = (e) => { if (e.key === 'Enter') saveAndSend(); };
 
-    // ページを開いた時に過去のログを復活させる
-    window.onload = () => {
-        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        logs.forEach(log => render(log.date, log.time, log.text));
-    };
+    window.onload = refresh;
 </script>
 
 </body>
