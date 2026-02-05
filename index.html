@@ -21,10 +21,7 @@
             display: flex; height: 100vh; overflow: hidden;
             transition: background-color 0.5s;
         }
-        /* メインコンテンツエリア */
-        .main-view {
-            flex: 1; display: flex; flex-direction: column; position: relative;
-        }
+        .main-view { flex: 1; display: flex; flex-direction: column; position: relative; }
         header {
             padding: 45px 20px 10px;
             display: flex; justify-content: space-between; align-items: center;
@@ -32,31 +29,34 @@
         }
         header h1 { font-size: 1.1rem; font-weight: 300; letter-spacing: 2px; margin: 0; }
 
-        /* 📅 右側のカレンダーインデックス */
         #calendar-index {
-            width: 45px;
-            background: rgba(0, 0, 0, 0.2);
-            display: flex; flex-direction: column;
-            align-items: center; padding-top: 50px;
+            width: 45px; background: rgba(0, 0, 0, 0.2);
+            display: flex; flex-direction: column; align-items: center; padding-top: 50px;
             overflow-y: auto; border-left: 1px solid rgba(255,255,255,0.05);
             font-family: monospace; font-size: 0.6rem; color: var(--accent-color);
             -webkit-overflow-scrolling: touch;
         }
-        .index-item {
-            padding: 10px 0; width: 100%; text-align: center;
-            opacity: 0.5; transition: 0.3s;
-        }
+        .index-item { padding: 10px 0; width: 100%; text-align: center; opacity: 0.5; transition: 0.3s; }
         .index-item:active { opacity: 1; background: rgba(255,255,255,0.1); }
 
         #settings-panel {
-            display: none;
-            position: fixed; top: 90px; right: 60px;
-            background: rgba(30, 0, 0, 0.95);
-            padding: 20px; border-radius: 15px; z-index: 999;
+            display: none; position: fixed; top: 90px; right: 60px;
+            background: rgba(30, 0, 0, 0.95); padding: 20px; border-radius: 15px; z-index: 999;
             border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px);
         }
 
         #log-container { flex: 1; overflow-y: auto; padding: 20px; scroll-behavior: smooth; }
+        
+        /* 📅 日付ヘッダー（下線＋共有ボタン） */
+        .date-divider {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.7rem; color: var(--accent-color); 
+            margin: 30px 0 15px; opacity: 0.7;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            padding-bottom: 5px;
+        }
+        .share-btn { cursor: pointer; padding: 0 5px; font-size: 1rem; }
+
         .log-item { display: flex; justify-content: space-between; margin-bottom: 18px; }
         .log-body { flex: 1; font-size: 0.95rem; line-height: 1.6; }
         .time-tag { font-size: 0.7rem; opacity: 0.4; margin-right: 10px; }
@@ -64,7 +64,7 @@
 
         .input-area {
             padding: 15px 20px 40px; background: rgba(0,0,0,0.3);
-            backdrop-filter: blur(10px); display: flex; gap: 10px;
+            backdrop-filter: blur(10px); display: flex; gap: 10px; align-items: center;
         }
         #log-input {
             flex: 1; background: rgba(255,255,255,0.1);
@@ -84,11 +84,11 @@
     <div id="settings-panel">
         <div style="margin-bottom:15px;">
             <label style="display:block;font-size:0.7rem;opacity:0.7;">Background</label>
-            <input type="text" id="bg-color-in" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:5px;width:120px;">
+            <input type="text" id="bg-color-in" placeholder="#4a0404" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:5px;width:120px;">
         </div>
         <div style="margin-bottom:15px;">
             <label style="display:block;font-size:0.7rem;opacity:0.7;">Text Color</label>
-            <input type="text" id="text-color-in" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:5px;width:120px;">
+            <input type="text" id="text-color-in" placeholder="#f5f5dc" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:5px;width:120px;">
         </div>
         <button onclick="applyColors()" style="width:100%;padding:10px;background:var(--accent-color);border:none;border-radius:8px;font-weight:bold;">Save</button>
     </div>
@@ -97,7 +97,7 @@
 
     <div class="input-area">
         <input type="text" id="log-input" placeholder="放流する..." autocomplete="off">
-        <button style="background:none;border:none;color:var(--accent-color);font-size:1.5rem;" onclick="addLog()">✦</button>
+        <button style="background:none;border:none;color:var(--accent-color);font-size:1.5rem;cursor:pointer;" onclick="addLog()">✧</button>
     </div>
 </div>
 
@@ -135,20 +135,23 @@
         refresh();
     }
 
-    window.deleteLog = (i) => {
+    async function shareDay(dateStr) {
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        logs.splice(i, 1);
-        localStorage.setItem('myLogs', JSON.stringify(logs));
-        refresh();
-    };
+        const dayLogs = logs.filter(l => l.d === dateStr);
+        const fullText = `【${dateStr}】\n` + dayLogs.map(l => `${l.t} ${l.text}`).join('\n');
+        if (navigator.share) {
+            try { await navigator.share({ text: fullText }); } catch (err) {}
+        } else {
+            navigator.clipboard.writeText(fullText);
+            alert('コピーしました');
+        }
+    }
 
-    // 🚀 インデックス（右側のバー）を作成する
     function updateIndex(dates) {
         calIndex.innerHTML = '';
         dates.forEach(date => {
             const item = document.createElement('div');
             item.className = 'index-item';
-            // 日付の「日」だけを表示（例: 2026.2.5 → 05）
             const day = date.split('.').pop().padStart(2, '0');
             item.innerText = day;
             item.onclick = () => {
@@ -159,6 +162,14 @@
         });
     }
 
+    window.deleteLog = (i) => {
+        if(!confirm("削除しますか？")) return;
+        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        logs.splice(i, 1);
+        localStorage.setItem('myLogs', JSON.stringify(logs));
+        refresh();
+    };
+
     function refresh() {
         container.innerHTML = '';
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
@@ -168,9 +179,9 @@
         logs.forEach((l, i) => {
             if (l.d !== lastDate) {
                 const div = document.createElement('div');
-                div.id = 'date-' + l.d; // ジャンプ用のID
-                div.style.cssText = "font-size:0.7rem; color:var(--accent-color); margin:20px 0 10px; opacity:0.5;";
-                div.innerText = l.d;
+                div.id = 'date-' + l.d;
+                div.className = 'date-divider';
+                div.innerHTML = `<span>${l.d}</span><span class="share-btn" onclick="shareDay('${l.d}')">✈︎</span>`;
                 container.appendChild(div);
                 lastDate = l.d;
                 dateList.push(l.d);
