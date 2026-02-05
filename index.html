@@ -22,6 +22,7 @@
             transition: background-color 0.5s;
         }
         .main-view { flex: 1; display: flex; flex-direction: column; position: relative; }
+        
         header {
             padding: 45px 20px 10px;
             display: flex; justify-content: space-between; align-items: center;
@@ -29,14 +30,18 @@
         }
         header h1 { font-size: 1.1rem; font-weight: 300; letter-spacing: 2px; margin: 0; }
 
+        /* 📅 右側のカレンダーインデックス */
         #calendar-index {
             width: 45px; background: rgba(0, 0, 0, 0.2);
-            display: flex; flex-direction: column; align-items: center; padding-top: 50px;
+            display: flex; flex-direction: column; align-items: center; 
+            padding-top: 50px; padding-bottom: 20px;
             overflow-y: auto; border-left: 1px solid rgba(255,255,255,0.05);
             font-family: monospace; font-size: 0.6rem; color: var(--accent-color);
-            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* Firefox用 */
         }
-        .index-item { padding: 10px 0; width: 100%; text-align: center; opacity: 0.5; transition: 0.3s; }
+        #calendar-index::-webkit-scrollbar { display: none; } /* Chrome, Safari用 */
+
+        .index-item { padding: 10px 0; width: 100%; text-align: center; opacity: 0.5; transition: 0.3s; cursor: pointer; }
         .index-item:active { opacity: 1; background: rgba(255,255,255,0.1); }
 
         #settings-panel {
@@ -47,20 +52,18 @@
 
         #log-container { flex: 1; overflow-y: auto; padding: 20px; scroll-behavior: smooth; }
         
-        /* 📅 日付ヘッダー（下線＋共有ボタン） */
-        .date-divider {
+        /* 日付見出し：下線あり */
+        .date-header {
             display: flex; justify-content: space-between; align-items: center;
-            font-size: 0.7rem; color: var(--accent-color); 
-            margin: 30px 0 15px; opacity: 0.7;
-            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
-            padding-bottom: 5px;
+            font-size: 0.7rem; color: var(--accent-color); margin: 30px 0 15px; opacity: 0.7;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2); padding-bottom: 5px;
         }
-        .share-btn { cursor: pointer; padding: 0 5px; font-size: 1rem; }
+        .share-day-btn { cursor: pointer; padding: 5px; font-size: 1rem; }
 
         .log-item { display: flex; justify-content: space-between; margin-bottom: 18px; }
         .log-body { flex: 1; font-size: 0.95rem; line-height: 1.6; }
         .time-tag { font-size: 0.7rem; opacity: 0.4; margin-right: 10px; }
-        .delete-btn { color: var(--accent-color); opacity: 0.3; cursor: pointer; padding-left: 15px; }
+        .delete-btn { color: var(--accent-color); opacity: 0.3; cursor: pointer; padding-left: 15px; font-size: 0.8rem; }
 
         .input-area {
             padding: 15px 20px 40px; background: rgba(0,0,0,0.3);
@@ -69,8 +72,9 @@
         #log-input {
             flex: 1; background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 20px; padding: 12px 15px; color: white; outline: none;
+            border-radius: 20px; padding: 12px 15px; color: white; outline: none; font-size: 16px; /* iOSの自動ズーム防止 */
         }
+        .send-btn { background: none; border: none; color: var(--accent-color); font-size: 1.5rem; cursor: pointer; padding: 0 5px; }
     </style>
 </head>
 <body>
@@ -78,26 +82,26 @@
 <div class="main-view">
     <header>
         <h1>Log Bouquet</h1>
-        <div style="cursor:pointer; opacity:0.6;" onclick="toggleSettings()">＋</div>
+        <div style="cursor:pointer; font-size: 1.2rem; opacity:0.6;" onclick="toggleSettings()">＋</div>
     </header>
 
     <div id="settings-panel">
         <div style="margin-bottom:15px;">
-            <label style="display:block;font-size:0.7rem;opacity:0.7;">Background</label>
-            <input type="text" id="bg-color-in" placeholder="#4a0404" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:5px;width:120px;">
+            <label style="display:block;font-size:0.7rem;opacity:0.7;margin-bottom:4px;">Background</label>
+            <input type="text" id="bg-color-in" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:5px;width:120px;border-radius:4px;">
         </div>
         <div style="margin-bottom:15px;">
-            <label style="display:block;font-size:0.7rem;opacity:0.7;">Text Color</label>
-            <input type="text" id="text-color-in" placeholder="#f5f5dc" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:5px;width:120px;">
+            <label style="display:block;font-size:0.7rem;opacity:0.7;margin-bottom:4px;">Text Color</label>
+            <input type="text" id="text-color-in" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:5px;width:120px;border-radius:4px;">
         </div>
-        <button onclick="applyColors()" style="width:100%;padding:10px;background:var(--accent-color);border:none;border-radius:8px;font-weight:bold;">Save</button>
+        <button onclick="applyColors()" style="width:100%;padding:10px;background:var(--accent-color);border:none;border-radius:8px;font-weight:bold;cursor:pointer;">Save</button>
     </div>
 
     <div id="log-container"></div>
 
     <div class="input-area">
         <input type="text" id="log-input" placeholder="放流する..." autocomplete="off">
-        <button style="background:none;border:none;color:var(--accent-color);font-size:1.5rem;cursor:pointer;" onclick="addLog()">✧</button>
+        <button class="send-btn" onclick="addLog()">✧</button>
     </div>
 </div>
 
@@ -110,14 +114,21 @@
 
     function toggleSettings() {
         const panel = document.getElementById('settings-panel');
-        panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+        if (panel.style.display === 'block') {
+            panel.style.display = 'none';
+        } else {
+            // 現在の値を入力欄にセット
+            document.getElementById('bg-color-in').value = getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim();
+            document.getElementById('text-color-in').value = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
+            panel.style.display = 'block';
+        }
     }
 
     function applyColors() {
-        const bg = document.getElementById('bg-color-in').value || '#4a0404';
-        const txt = document.getElementById('text-color-in').value || '#f5f5dc';
-        document.documentElement.style.setProperty('--bg-color', bg);
-        document.documentElement.style.setProperty('--text-color', txt);
+        const bg = document.getElementById('bg-color-in').value;
+        const txt = document.getElementById('text-color-in').value;
+        if(bg) document.documentElement.style.setProperty('--bg-color', bg);
+        if(txt) document.documentElement.style.setProperty('--text-color', txt);
         localStorage.setItem('myTheme', JSON.stringify({bg, txt}));
         toggleSettings();
     }
@@ -138,6 +149,7 @@
     async function shareDay(dateStr) {
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         const dayLogs = logs.filter(l => l.d === dateStr);
+        if (dayLogs.length === 0) return;
         const fullText = `【${dateStr}】\n` + dayLogs.map(l => `${l.t} ${l.text}`).join('\n');
         if (navigator.share) {
             try { await navigator.share({ text: fullText }); } catch (err) {}
@@ -163,11 +175,12 @@
     }
 
     window.deleteLog = (i) => {
-        if(!confirm("削除しますか？")) return;
-        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        logs.splice(i, 1);
-        localStorage.setItem('myLogs', JSON.stringify(logs));
-        refresh();
+        if(confirm("このログを削除しますか？")) {
+            const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+            logs.splice(i, 1);
+            localStorage.setItem('myLogs', JSON.stringify(logs));
+            refresh();
+        }
     };
 
     function refresh() {
@@ -178,17 +191,20 @@
 
         logs.forEach((l, i) => {
             if (l.d !== lastDate) {
-                const div = document.createElement('div');
-                div.id = 'date-' + l.d;
-                div.className = 'date-divider';
-                div.innerHTML = `<span>${l.d}</span><span class="share-btn" onclick="shareDay('${l.d}')">✈︎</span>`;
-                container.appendChild(div);
+                const header = document.createElement('div');
+                header.id = 'date-' + l.d;
+                header.className = 'date-header';
+                header.innerHTML = `<span>${l.d}</span><span class="share-day-btn" onclick="shareDay('${l.d}')">✈︎</span>`;
+                container.appendChild(header);
                 lastDate = l.d;
                 dateList.push(l.d);
             }
             const item = document.createElement('div');
             item.className = 'log-item';
-            item.innerHTML = `<div class="log-body"><span class="time-tag">${l.t}</span>${l.text}</div><div class="delete-btn" onclick="deleteLog(${i})">✎</div>`;
+            item.innerHTML = `
+                <div class="log-body"><span class="time-tag">${l.t}</span>${l.text}</div>
+                <div class="delete-btn" onclick="deleteLog(${i})">✎</div>
+            `;
             container.appendChild(item);
         });
         updateIndex(dateList);
@@ -198,12 +214,17 @@
     window.onload = () => {
         const theme = JSON.parse(localStorage.getItem('myTheme'));
         if(theme) {
-            document.documentElement.style.setProperty('--bg-color', theme.bg);
-            document.documentElement.style.setProperty('--text-color', theme.txt);
+            if(theme.bg) document.documentElement.style.setProperty('--bg-color', theme.bg);
+            if(theme.txt) document.documentElement.style.setProperty('--text-color', theme.txt);
         }
         refresh();
     };
-    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') addLog(); });
+
+    input.addEventListener('keydown', (e) => { 
+        if (e.key === 'Enter' && !e.isComposing) {
+            addLog();
+        }
+    });
 </script>
 </body>
 </html>
