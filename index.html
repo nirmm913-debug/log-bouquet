@@ -8,108 +8,51 @@
     <title>Log Bouquet</title>
     <style>
         :root {
-            --bg-color: #4a0404; /* ヴィンテージ・ボルドー */
-            --text-color: #f5f5dc; /* シャンパンゴールド（ベージュ系） */
+            --bg-color: #4a0404;
+            --text-color: #f5f5dc;
             --accent-color: #d4af37;
             --input-bg: rgba(255, 255, 255, 0.1);
         }
-
         body {
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             background-color: var(--bg-color);
             color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
+            font-family: -apple-system, sans-serif;
+            display: flex; flex-direction: column;
+            height: 100vh; overflow: hidden;
         }
-
         body::before {
-            content: "🌸";
-            position: fixed;
-            bottom: -50px;
-            right: -20px;
-            font-size: 200px;
-            opacity: 0.05;
-            pointer-events: none;
+            content: "🌸"; position: fixed; bottom: -50px; right: -20px;
+            font-size: 200px; opacity: 0.05; pointer-events: none;
         }
-
         header {
             padding: 40px 20px 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            display: flex; justify-content: space-between; align-items: center;
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-
-        header h1 { font-size: 1.2rem; margin: 0; font-weight: 300; letter-spacing: 2px; }
-
         #log-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            scroll-behavior: smooth;
+            flex: 1; overflow-y: auto; padding: 20px; scroll-behavior: smooth;
         }
-
         .date-divider {
-            font-size: 0.8rem;
-            color: var(--accent-color);
-            margin: 30px 0 10px;
-            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            font-size: 0.8rem; color: var(--accent-color);
+            margin: 30px 0 10px; border-bottom: 1px solid rgba(212, 175, 55, 0.3);
             padding-bottom: 5px;
         }
-
-        .log-item {
-            margin-bottom: 15px;
-            line-height: 1.6;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
+        .log-item { margin-bottom: 15px; line-height: 1.6; }
         .time { font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-right: 10px; }
-
         .input-area {
-            padding: 20px;
-            background: rgba(0,0,0,0.2);
-            backdrop-filter: blur(10px);
-            display: flex;
-            gap: 10px;
+            padding: 20px; background: rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px); display: flex; gap: 10px;
         }
-
         input {
-            flex: 1;
-            background: var(--input-bg);
+            flex: 1; background: var(--input-bg);
             border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 20px;
-            padding: 10px 15px;
-            color: white;
-            outline: none;
+            border-radius: 20px; padding: 10px 15px;
+            color: white; outline: none;
         }
-
         button {
-            background: none;
-            border: none;
-            color: var(--accent-color);
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-
-        #side-nav {
-            position: fixed;
-            right: 0;
-            top: 100px;
-            bottom: 100px;
-            width: 30px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            font-size: 0.6rem;
-            color: var(--accent-color);
-            opacity: 0.5;
+            background: none; border: none;
+            color: var(--accent-color); font-size: 1.5rem; cursor: pointer;
         }
     </style>
 </head>
@@ -122,40 +65,60 @@
 
 <div id="log-container"></div>
 
-<div id="side-nav">
-    <div>2026</div>
-    <div style="margin: 10px 0;">|</div>
-    <div>FEB</div>
-</div>
-
 <div class="input-area">
     <input type="text" id="log-input" placeholder="いまの気持ちを放流する...">
-    <button onclick="addLog()">✦</button>
+    <button id="send-btn">✦</button>
 </div>
 
 <script>
     const input = document.getElementById('log-input');
     const container = document.getElementById('log-container');
+    const button = document.getElementById('send-btn');
 
-    // ログを画面に表示する関数
-    function displayLog(date, time, text) {
+    // 画面にログを表示するだけの機能
+    function render(date, time, text) {
         if (!document.getElementById(date)) {
-            const divider = document.createElement('div');
-            divider.className = 'date-divider';
-            divider.id = date;
-            divider.innerText = date;
-            container.appendChild(divider);
+            const d = document.createElement('div');
+            d.className = 'date-divider';
+            d.id = date;
+            d.innerText = date;
+            container.appendChild(d);
         }
         const item = document.createElement('div');
         item.className = 'log-item';
         item.innerHTML = `<span class="time">${time}</span>${text}`;
         container.appendChild(item);
+        container.scrollTop = container.scrollHeight;
     }
 
-    // 新しくログを追加する関数
-    function addLog() {
+    // 保存して表示する機能
+    function saveAndSend() {
         const text = input.value.trim();
         if (!text) return;
 
         const now = new Date();
-        const dateStr = `${now.getFullYear
+        const dStr = `${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()}`;
+        const tStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        render(dStr, tStr, text);
+
+        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        logs.push({ date: dStr, time: tStr, text: text });
+        localStorage.setItem('myLogs', JSON.stringify(logs));
+
+        input.value = '';
+    }
+
+    // ボタンとEnterキーに機能を割り当て
+    button.onclick = saveAndSend;
+    input.onkeypress = (e) => { if (e.key === 'Enter') saveAndSend(); };
+
+    // ページを開いた時に過去のログを復活させる
+    window.onload = () => {
+        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        logs.forEach(log => render(log.date, log.time, log.text));
+    };
+</script>
+
+</body>
+</html>
