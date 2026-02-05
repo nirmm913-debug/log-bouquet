@@ -30,19 +30,16 @@
         }
         header h1 { font-size: 1.1rem; font-weight: 300; letter-spacing: 2px; margin: 0; }
 
-        /* 📅 右側のカレンダーインデックス */
         #calendar-index {
             width: 45px; background: rgba(0, 0, 0, 0.2);
             display: flex; flex-direction: column; align-items: center; 
             padding-top: 50px; padding-bottom: 20px;
             overflow-y: auto; border-left: 1px solid rgba(255,255,255,0.05);
             font-family: monospace; font-size: 0.6rem; color: var(--accent-color);
-            scrollbar-width: none; /* Firefox用 */
+            scrollbar-width: none;
         }
-        #calendar-index::-webkit-scrollbar { display: none; } /* Chrome, Safari用 */
-
+        #calendar-index::-webkit-scrollbar { display: none; }
         .index-item { padding: 10px 0; width: 100%; text-align: center; opacity: 0.5; transition: 0.3s; cursor: pointer; }
-        .index-item:active { opacity: 1; background: rgba(255,255,255,0.1); }
 
         #settings-panel {
             display: none; position: fixed; top: 90px; right: 60px;
@@ -52,7 +49,6 @@
 
         #log-container { flex: 1; overflow-y: auto; padding: 20px; scroll-behavior: smooth; }
         
-        /* 日付見出し：下線あり */
         .date-header {
             display: flex; justify-content: space-between; align-items: center;
             font-size: 0.7rem; color: var(--accent-color); margin: 30px 0 15px; opacity: 0.7;
@@ -63,18 +59,20 @@
         .log-item { display: flex; justify-content: space-between; margin-bottom: 18px; }
         .log-body { flex: 1; font-size: 0.95rem; line-height: 1.6; }
         .time-tag { font-size: 0.7rem; opacity: 0.4; margin-right: 10px; }
+        .log-img { display: block; max-width: 140px; max-height: 140px; border-radius: 8px; margin-top: 10px; }
         .delete-btn { color: var(--accent-color); opacity: 0.3; cursor: pointer; padding-left: 15px; font-size: 0.8rem; }
 
         .input-area {
             padding: 15px 20px 40px; background: rgba(0,0,0,0.3);
-            backdrop-filter: blur(10px); display: flex; gap: 10px; align-items: center;
+            backdrop-filter: blur(10px); display: flex; gap: 12px; align-items: center;
         }
         #log-input {
             flex: 1; background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 20px; padding: 12px 15px; color: white; outline: none; font-size: 16px; /* iOSの自動ズーム防止 */
+            border-radius: 20px; padding: 12px 15px; color: white; outline: none; font-size: 16px;
         }
-        .send-btn { background: none; border: none; color: var(--accent-color); font-size: 1.5rem; cursor: pointer; padding: 0 5px; }
+        .symbol-btn { color: var(--accent-color); opacity: 0.7; font-size: 1.3rem; cursor: pointer; display: flex; align-items: center; }
+        #img-preview { width: 35px; height: 35px; border-radius: 4px; object-fit: cover; display: none; }
     </style>
 </head>
 <body>
@@ -94,137 +92,4 @@
             <label style="display:block;font-size:0.7rem;opacity:0.7;margin-bottom:4px;">Text Color</label>
             <input type="text" id="text-color-in" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:5px;width:120px;border-radius:4px;">
         </div>
-        <button onclick="applyColors()" style="width:100%;padding:10px;background:var(--accent-color);border:none;border-radius:8px;font-weight:bold;cursor:pointer;">Save</button>
-    </div>
-
-    <div id="log-container"></div>
-
-    <div class="input-area">
-        <input type="text" id="log-input" placeholder="放流する..." autocomplete="off">
-        <button class="send-btn" onclick="addLog()">✧</button>
-    </div>
-</div>
-
-<div id="calendar-index"></div>
-
-<script>
-    const container = document.getElementById('log-container');
-    const input = document.getElementById('log-input');
-    const calIndex = document.getElementById('calendar-index');
-
-    function toggleSettings() {
-        const panel = document.getElementById('settings-panel');
-        if (panel.style.display === 'block') {
-            panel.style.display = 'none';
-        } else {
-            // 現在の値を入力欄にセット
-            document.getElementById('bg-color-in').value = getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim();
-            document.getElementById('text-color-in').value = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
-            panel.style.display = 'block';
-        }
-    }
-
-    function applyColors() {
-        const bg = document.getElementById('bg-color-in').value;
-        const txt = document.getElementById('text-color-in').value;
-        if(bg) document.documentElement.style.setProperty('--bg-color', bg);
-        if(txt) document.documentElement.style.setProperty('--text-color', txt);
-        localStorage.setItem('myTheme', JSON.stringify({bg, txt}));
-        toggleSettings();
-    }
-
-    function addLog() {
-        const text = input.value.trim();
-        if (!text) return;
-        const now = new Date();
-        const d = `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()}`;
-        const t = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
-        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        logs.push({ d, t, text });
-        localStorage.setItem('myLogs', JSON.stringify(logs));
-        input.value = '';
-        refresh();
-    }
-
-    async function shareDay(dateStr) {
-        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        const dayLogs = logs.filter(l => l.d === dateStr);
-        if (dayLogs.length === 0) return;
-        const fullText = `【${dateStr}】\n` + dayLogs.map(l => `${l.t} ${l.text}`).join('\n');
-        if (navigator.share) {
-            try { await navigator.share({ text: fullText }); } catch (err) {}
-        } else {
-            navigator.clipboard.writeText(fullText);
-            alert('コピーしました');
-        }
-    }
-
-    function updateIndex(dates) {
-        calIndex.innerHTML = '';
-        dates.forEach(date => {
-            const item = document.createElement('div');
-            item.className = 'index-item';
-            const day = date.split('.').pop().padStart(2, '0');
-            item.innerText = day;
-            item.onclick = () => {
-                const target = document.getElementById('date-' + date);
-                if (target) target.scrollIntoView({behavior: 'smooth'});
-            };
-            calIndex.appendChild(item);
-        });
-    }
-
-    window.deleteLog = (i) => {
-        if(confirm("このログを削除しますか？")) {
-            const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-            logs.splice(i, 1);
-            localStorage.setItem('myLogs', JSON.stringify(logs));
-            refresh();
-        }
-    };
-
-    function refresh() {
-        container.innerHTML = '';
-        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        let lastDate = "";
-        let dateList = [];
-
-        logs.forEach((l, i) => {
-            if (l.d !== lastDate) {
-                const header = document.createElement('div');
-                header.id = 'date-' + l.d;
-                header.className = 'date-header';
-                header.innerHTML = `<span>${l.d}</span><span class="share-day-btn" onclick="shareDay('${l.d}')">✈︎</span>`;
-                container.appendChild(header);
-                lastDate = l.d;
-                dateList.push(l.d);
-            }
-            const item = document.createElement('div');
-            item.className = 'log-item';
-            item.innerHTML = `
-                <div class="log-body"><span class="time-tag">${l.t}</span>${l.text}</div>
-                <div class="delete-btn" onclick="deleteLog(${i})">✎</div>
-            `;
-            container.appendChild(item);
-        });
-        updateIndex(dateList);
-        container.scrollTop = container.scrollHeight;
-    }
-
-    window.onload = () => {
-        const theme = JSON.parse(localStorage.getItem('myTheme'));
-        if(theme) {
-            if(theme.bg) document.documentElement.style.setProperty('--bg-color', theme.bg);
-            if(theme.txt) document.documentElement.style.setProperty('--text-color', theme.txt);
-        }
-        refresh();
-    };
-
-    input.addEventListener('keydown', (e) => { 
-        if (e.key === 'Enter' && !e.isComposing) {
-            addLog();
-        }
-    });
-</script>
-</body>
-</html>
+        <button onclick="applyColors()" style="width:100%;padding:10px;background:var(--accent-color);border:none;border-radius:8px;font-weight
