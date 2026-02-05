@@ -76,4 +76,154 @@
             width: 45px; background: rgba(0, 0, 0, 0.2);
             display: flex; flex-direction: column; align-items: center; padding-top: 50px;
             overflow-y: auto; border-left: 1px solid rgba(255,255,255,0.05);
-            font-family: monospace; font-size: 0.65rem; color: var(--accent-color); opacity:
+            font-family: monospace; font-size: 0.65rem; color: var(--accent-color); opacity: 0.5;
+        }
+        .index-item { padding: 12px 0; width: 100%; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="main-view">
+    <header>
+        <h1>Log Bouquet</h1>
+        <div class="symbol-btn" style="font-size: 1.5rem; opacity: 0.5;" onclick="toggleSettings()">＋</div>
+    </header>
+    <div id="log-container"></div>
+    <div class="input-area">
+        <label class="symbol-btn">
+            <input type="file" id="img-input" accept="image/*" style="display:none;" onchange="previewImg(this)">
+            &#x1F4F7;&#xFE0E;
+        </label>
+        <img id="img-preview">
+        <input type="text" id="log-input" placeholder="放流する..." autocomplete="off">
+        <button class="symbol-btn" onclick="addLog()">✧</button>
+    </div>
+</div>
+<div id="calendar-index"></div>
+
+<script>
+    let currentBase64 = "";
+
+    function toggleSettings() { 
+        const currentBg = getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim();
+        const newBg = currentBg === '#4a0404' ? '#1a1a1a' : '#4a0404';
+        document.documentElement.style.setProperty('--bg-color', newBg);
+        localStorage.setItem('myTheme', JSON.stringify({bg: newBg, txt: '#f5f5dc'}));
+    }
+
+    function previewImg(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_SIZE = 500;
+                    let w = img.width, h = img.height;
+                    if (w > h) { if (w > MAX_SIZE) { h *= MAX_SIZE / w; w = MAX_SIZE; } }
+                    else { if (h > MAX_SIZE) { w *= MAX_SIZE / h; h = MAX_SIZE; } }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    currentBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                    document.getElementById('img-preview').src = currentBase64;
+                    document.getElementById('img-preview').style.display = 'block';
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function addLog() {
+        const input = document.getElementById('log-input');
+        const text = input.value.trim();
+        if (!text && !currentBase64) return;
+        const now = new Date();
+        const d = `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()}`;
+        const t = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        logs.push({ d, t, text, img: currentBase64 });
+        localStorage.setItem('myLogs', JSON.stringify(logs));
+        input.value = '';
+        document.getElementById('img-preview').style.display = 'none';
+        currentBase64 = "";
+        refresh();
+    }
+
+    async function shareDay(dateStr) {
+        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        const dayLogs = logs.filter(l => l.d === dateStr);
+        if (dayLogs.length === 0) return;
+        const fullText = `【Log Bouquet: ${dateStr}】\n\n` + dayLogs.map(l => `${l.t} ${l.text}`).join('\n');
+        if (navigator.share) {
+            try { await navigator.share({ title: dateStr, text: fullText }); } 
+            catch (err) { console.log("Share failed", err); }
+        } else {
+            alert("お使いのブラウザは共有に対応していません");
+        }
+    }
+
+    function refresh() {
+        const container = document.getElementById('log-container');
+        container.innerHTML = '';
+        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        let lastDate = "";
+        let dateList = [];
+
+        logs.forEach((l, i) => {
+            if (l.d !== lastDate) {
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'date-header';
+                headerDiv.id = 'date-' + l.d;
+                // ここで日付と紙飛行機ボタンをセット
+                headerDiv.innerHTML = `<span>${l.d}</span><span class="share-day-btn" onclick="shareDay('${l.d}')">&#x2708;&#xFE0E;</span>`;
+                container.appendChild(headerDiv);
+                lastDate = l.d;
+                dateList.push(l.d);
+            }
+            const item = document.createElement('div');
+            item.className = 'log-item';
+            let imgHtml = l.img ? `<img src="${l.img}" class="log-img">` : '';
+            item.innerHTML = `
+                <div class="log-content">
+                    <div class="log-body"><span class="time-tag">${l.t}</span>${l.text}${imgHtml}</div>
+                    <div class="delete-btn" onclick="deleteLog(${i})">✕</div>
+                </div>`;
+            container.appendChild(item);
+        });
+        updateIndex(dateList);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function updateIndex(dates) {
+        const calIndex = document.getElementById('calendar-index');
+        calIndex.innerHTML = '';
+        dates.forEach(date => {
+            const item = document.createElement('div');
+            item.className = 'index-item';
+            item.innerText = date.split('.').pop().padStart(2, '0');
+            item.onclick = () => {
+                const target = document.getElementById('date-' + date);
+                if(target) target.scrollIntoView({behavior: 'smooth'});
+            };
+            calIndex.appendChild(item);
+        });
+    }
+
+    window.deleteLog = (i) => {
+        if(confirm("このログを削除しますか？")) {
+            const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+            logs.splice(i, 1);
+            localStorage.setItem('myLogs', JSON.stringify(logs));
+            refresh();
+        }
+    };
+
+    window.onload = () => {
+        const theme = JSON.parse(localStorage.getItem('myTheme'));
+        if(theme) document.documentElement.style.setProperty('--bg-color', theme.bg);
+        refresh();
+    };
+</script>
+</body>
+</html>
