@@ -39,18 +39,17 @@
 
         #settings-panel {
             display: none; position: fixed; top: 90px; right: 60px;
-            background: rgba(30, 0, 0, 0.95); padding: 20px; border-radius: 15px; z-index: 999;
+            background: rgba(20, 20, 20, 0.95); padding: 20px; border-radius: 15px; z-index: 999;
             border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px);
             max-width: 220px;
         }
 
-        /* ログコンテナの底上げ用スタイル */
         #log-container { 
             flex: 1; 
             overflow-y: auto; 
             padding: 20px; 
             scroll-behavior: smooth; 
-            transition: padding-bottom 0.3s; /* キーボードが出た時のアニメーション */
+            transition: padding-bottom 0.3s; 
         }
         
         .date-header {
@@ -79,8 +78,15 @@
         }
         .icon-btn { color: var(--accent-color); font-size: 1.4rem; cursor: pointer; background: none; border: none; padding: 0; display: flex; align-items: center; }
         #img-preview { width: 30px; height: 30px; border-radius: 4px; object-fit: cover; display: none; }
-        .bk-btn { width: 100%; padding: 8px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; margin-top: 8px; font-size: 0.7rem; cursor: pointer; }
-        .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 0.8rem; }
+        
+        /* 設定パネル内の入力欄 */
+        .setting-input {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 8px; width: 100%; box-sizing: border-box; 
+            margin-bottom: 12px; border-radius: 5px; font-size: 0.8rem;
+        }
+        .bk-btn { width: 100%; padding: 8px; background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; margin-top: 8px; font-size: 0.7rem; cursor: pointer; }
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 0.8rem; }
     </style>
 </head>
 <body class="show-time">
@@ -92,18 +98,16 @@
     </header>
 
     <div id="settings-panel">
-        <label style="display:block;font-size:0.7rem;opacity:0.7;">Background</label>
-        <input type="text" id="bg-color-in" placeholder="#4a0404" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:5px;width:100%;box-sizing:border-box;margin-bottom:10px;">
+        <label style="display:block;font-size:0.6rem;opacity:0.5;margin-bottom:4px;">Background</label>
+        <input type="text" id="bg-color-in" class="setting-input" placeholder="e.g. #172029" onchange="autoApplyColors()">
         
-        <label style="display:block;font-size:0.7rem;opacity:0.7;">Text Color</label>
-        <input type="text" id="text-color-in" placeholder="#f5f5dc" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:5px;width:100%;box-sizing:border-box;margin-bottom:15px;">
+        <label style="display:block;font-size:0.6rem;opacity:0.5;margin-bottom:4px;">Text Color</label>
+        <input type="text" id="text-color-in" class="setting-input" placeholder="e.g. #f5f5dc" onchange="autoApplyColors()">
         
         <div class="toggle-row">
-            <span>Time Stamp</span>
+            <span style="opacity:0.7">Time Stamp</span>
             <input type="checkbox" id="time-toggle" checked onchange="updateTimeDisplay()">
         </div>
-
-        <button onclick="applyColors()" style="width:100%;padding:10px;background:var(--accent-color);border:none;border-radius:8px;font-weight:bold;cursor:pointer;">Save</button>
 
         <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;">
         <button class="bk-btn" onclick="exportData()">Download Logs (.json)</button>
@@ -134,19 +138,12 @@
     const calIndex = document.getElementById('calendar-index');
     let currentBase64 = "";
 
-    // --- 入力時の画面ズレ対策 ---
+    // 入力時の視認性向上
     input.addEventListener('focus', () => {
-        // キーボード分（画面の約半分）の余白を下に作る
         container.style.paddingBottom = "50vh";
-        setTimeout(() => {
-            container.scrollTop = container.scrollHeight;
-        }, 300);
+        setTimeout(() => { container.scrollTop = container.scrollHeight; }, 300);
     });
-
-    input.addEventListener('blur', () => {
-        // フォーカスが外れたら余白を元に戻す
-        container.style.paddingBottom = "20px";
-    });
+    input.addEventListener('blur', () => { container.style.paddingBottom = "20px"; });
 
     function toggleSettings() {
         const panel = document.getElementById('settings-panel');
@@ -160,13 +157,18 @@
         localStorage.setItem('showTime', isVisible);
     }
 
-    function applyColors() {
-        const bg = document.getElementById('bg-color-in').value || '#4a0404';
-        const txt = document.getElementById('text-color-in').value || '#f5f5dc';
+    // --- 自動反映・保存機能 ---
+    function autoApplyColors() {
+        const bgInput = document.getElementById('bg-color-in');
+        const txtInput = document.getElementById('text-color-in');
+        
+        // 入力が空なら現在の値（またはデフォルト）を維持
+        const bg = bgInput.value.trim() || getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim();
+        const txt = txtInput.value.trim() || getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
+        
         document.documentElement.style.setProperty('--bg-color', bg);
         document.documentElement.style.setProperty('--text-color', txt);
         localStorage.setItem('myTheme', JSON.stringify({bg, txt}));
-        toggleSettings();
     }
 
     function exportData() {
@@ -260,7 +262,6 @@
             container.appendChild(item);
         });
         updateIndex(dateList);
-        // 入力中（フォーカス時）でなければ一番下へ
         if (document.activeElement !== input) {
             container.scrollTop = container.scrollHeight;
         }
