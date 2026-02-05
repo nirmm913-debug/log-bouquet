@@ -16,131 +16,83 @@
             margin: 0; padding: 0;
             background-color: var(--bg-color);
             color: var(--text-color);
-            font-family: -apple-system, sans-serif;
+            font-family: -apple-system, "Helvetica Neue", sans-serif;
             display: flex; flex-direction: column;
             height: 100vh; overflow: hidden;
-            transition: background-color 0.5s; /* 色変更をふわっとさせる */
+            transition: background-color 0.5s;
+        }
+        body::before {
+            content: "🌸"; position: fixed; bottom: -50px; right: -20px;
+            font-size: 200px; opacity: 0.05; pointer-events: none;
         }
         header {
             padding: 40px 20px 10px;
             display: flex; justify-content: space-between; align-items: center;
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        /* 設定パネルのスタイル */
+        header h1 { font-size: 1.1rem; font-weight: 300; letter-spacing: 2px; margin: 0; }
+
+        /* ⚙️ 歯車を記号風に */
+        .settings-icon {
+            font-size: 1.4rem;
+            line-height: 1;
+            cursor: pointer;
+            opacity: 0.7;
+            font-weight: 200;
+        }
+
         #settings-panel {
             display: none;
-            position: fixed; top: 80px; right: 20px;
-            background: rgba(0,0,0,0.8); padding: 15px;
-            border-radius: 10px; z-index: 100; font-size: 0.8rem;
+            position: fixed; top: 85px; right: 20px;
+            background: rgba(20, 0, 0, 0.9);
+            padding: 20px; border-radius: 15px;
+            z-index: 100; font-size: 0.8rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .color-input { margin-bottom: 10px; }
-        .color-input input { width: 80px; padding: 2px; font-size: 0.7rem; }
+        .color-input { margin-bottom: 15px; }
+        .color-input label { display: block; margin-bottom: 5px; opacity: 0.8; }
+        .color-input input { 
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 5px 10px; border-radius: 5px; width: 100px; font-family: monospace;
+        }
+        .save-btn {
+            width: 100%; padding: 8px; background: var(--accent-color);
+            border: none; border-radius: 5px; color: var(--bg-color); font-weight: bold; cursor: pointer;
+        }
 
-        #log-container { flex: 1; overflow-y: auto; padding: 20px; }
-        .log-item { display: flex; justify-content: space-between; margin-bottom: 15px; }
-        .delete-btn { color: var(--accent-color); opacity: 0.4; cursor: pointer; padding-left: 10px; }
+        #log-container { flex: 1; overflow-y: auto; padding: 20px; scroll-behavior: smooth; }
+        .log-item { display: flex; justify-content: space-between; margin-bottom: 18px; line-height: 1.6; }
+        .log-body { flex: 1; font-size: 0.95rem; }
+        .time-tag { font-size: 0.7rem; opacity: 0.4; margin-right: 12px; font-family: monospace; }
         
+        /* ✎ ペンマークを細身の記号に */
+        .delete-btn { 
+            color: var(--accent-color); opacity: 0.3; cursor: pointer; 
+            padding: 0 0 0 15px; font-size: 0.9rem;
+        }
+
         .input-area {
-            padding: 20px; background: rgba(0,0,0,0.2);
-            backdrop-filter: blur(10px); display: flex; gap: 10px;
+            padding: 20px 20px 40px; background: rgba(0,0,0,0.2);
+            backdrop-filter: blur(15px); display: flex; gap: 12px;
         }
         #log-input {
-            flex: 1; background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 20px; padding: 10px 15px; color: white;
+            flex: 1; background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 25px; padding: 12px 18px; color: white; outline: none;
+            font-size: 1rem;
         }
+        .send-btn { background: none; border: none; color: var(--accent-color); font-size: 1.6rem; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <header>
     <h1>Log Bouquet</h1>
-    <div onclick="toggleSettings()" style="cursor:pointer;">⚙️</div>
-</header>
+    <div class="settings-icon" onclick="toggleSettings()">⛇</div> </header>
 
 <div id="settings-panel">
     <div class="color-input">
-        背景色: <input type="text" id="bg-color-in" placeholder="#4a0404">
-    </div>
-    <div class="color-input">
-        文字色: <input type="text" id="text-color-in" placeholder="#f5f5dc">
-    </div>
-    <button onclick="applyColors()" style="color:white; border:1px solid white; padding:2px 10px;">保存</button>
-</div>
-
-<div id="log-container"></div>
-
-<div class="input-area">
-    <input type="text" id="log-input" placeholder="いまの気持ちを放流する...">
-    <button onclick="addLog()">✦</button>
-</div>
-
-<script>
-    const container = document.getElementById('log-container');
-    const input = document.getElementById('log-input');
-
-    // ⚙️ 設定パネルの開閉
-    function toggleSettings() {
-        const panel = document.getElementById('settings-panel');
-        panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-    }
-
-    // 🎨 色を反映して保存する
-    function applyColors() {
-        const bg = document.getElementById('bg-color-in').value || '#4a0404';
-        const txt = document.getElementById('text-color-in').value || '#f5f5dc';
-        
-        document.documentElement.style.setProperty('--bg-color', bg);
-        document.documentElement.style.setProperty('--text-color', txt);
-        
-        localStorage.setItem('myTheme', JSON.stringify({bg, txt}));
-        toggleSettings();
-    }
-
-    // 📝 ログ機能
-    function addLog() {
-        const text = input.value.trim();
-        if (!text) return;
-        const now = new Date();
-        const d = `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()}`;
-        const t = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
-        
-        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        logs.push({ d, t, text });
-        localStorage.setItem('myLogs', JSON.stringify(logs));
-        input.value = '';
-        refresh();
-    }
-
-    window.deleteLog = (i) => {
-        if(!confirm("削除しますか？")) return;
-        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        logs.splice(i, 1);
-        localStorage.setItem('myLogs', JSON.stringify(logs));
-        refresh();
-    };
-
-    function refresh() {
-        container.innerHTML = '';
-        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        logs.forEach((l, i) => {
-            const item = document.createElement('div');
-            item.className = 'log-item';
-            item.innerHTML = `<div><span style="font-size:0.7rem;opacity:0.4;margin-right:10px;">${l.t}</span>${l.text}</div><div class="delete-btn" onclick="deleteLog(${i})">✎</div>`;
-            container.appendChild(item);
-        });
-        container.scrollTop = container.scrollHeight;
-    }
-
-    // 🚀 読み込み時に色とログを復元
-    window.onload = () => {
-        const theme = JSON.parse(localStorage.getItem('myTheme'));
-        if(theme) {
-            document.documentElement.style.setProperty('--bg-color', theme.bg);
-            document.documentElement.style.setProperty('--text-color', theme.txt);
-        }
-        refresh();
-    };
-</script>
-</body>
-</html>
+        <label>Background Color</label>
+        <input type="text" id="bg-color-in" placeholder="#4a
