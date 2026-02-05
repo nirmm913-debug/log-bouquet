@@ -76,10 +76,12 @@
             flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
             border-radius: 20px; padding: 12px 15px; color: white; outline: none; font-size: 16px;
         }
+        /* 編集中の入力欄の色 */
+        #log-input.editing { border-color: var(--accent-color); background: rgba(212, 175, 55, 0.1); }
+
         .icon-btn { color: var(--accent-color); font-size: 1.4rem; cursor: pointer; background: none; border: none; padding: 0; display: flex; align-items: center; }
         #img-preview { width: 30px; height: 30px; border-radius: 4px; object-fit: cover; display: none; }
         
-        /* 設定パネル内の入力欄 */
         .setting-input {
             background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
             color: white; padding: 8px; width: 100%; box-sizing: border-box; 
@@ -87,9 +89,35 @@
         }
         .bk-btn { width: 100%; padding: 8px; background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; margin-top: 8px; font-size: 0.7rem; cursor: pointer; }
         .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 0.8rem; }
+
+        /* カスタムダイアログ */
+        #custom-dialog {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center;
+        }
+        .dialog-content {
+            background: #1e1e1e; padding: 25px; border-radius: 20px; width: 260px; text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .dialog-content button {
+            width: 100%; padding: 12px; margin: 5px 0; border-radius: 10px; border: none;
+            font-size: 0.9rem; font-weight: bold; cursor: pointer;
+        }
+        .btn-edit { background: var(--accent-color); color: #000; }
+        .btn-delete { background: #4a0404; color: #fff; margin-top: 15px !important; }
+        .btn-cancel { background: rgba(255,255,255,0.1); color: #fff; }
     </style>
 </head>
 <body class="show-time">
+
+<div id="custom-dialog">
+    <div class="dialog-content">
+        <div style="margin-bottom:20px; font-size:0.9rem; opacity:0.8;">このログをどうしますか？</div>
+        <button class="btn-edit" onclick="startEdit()">編集する</button>
+        <button class="btn-cancel" onclick="closeDialog()">キャンセル</button>
+        <button class="btn-delete" onclick="confirmDelete()">削除する</button>
+    </div>
+</div>
 
 <div class="main-view">
     <header>
@@ -97,18 +125,15 @@
         <div style="cursor:pointer; opacity:0.6; font-size:1.5rem;" onclick="toggleSettings()">＋</div>
     </header>
 
-<div id="settings-panel">
+    <div id="settings-panel">
         <label style="display:block;font-size:0.6rem;opacity:0.5;margin-bottom:4px;">Background</label>
-        <input type="text" id="bg-color-in" class="setting-input" placeholder="" onchange="autoApplyColors()">
-        
+        <input type="text" id="bg-color-in" class="setting-input" onchange="autoApplyColors()">
         <label style="display:block;font-size:0.6rem;opacity:0.5;margin-bottom:4px;">Text Color</label>
-        <input type="text" id="text-color-in" class="setting-input" placeholder="" onchange="autoApplyColors()">
-        
+        <input type="text" id="text-color-in" class="setting-input" onchange="autoApplyColors()">
         <div class="toggle-row">
             <span style="opacity:0.7">Time Stamp</span>
             <input type="checkbox" id="time-toggle" checked onchange="updateTimeDisplay()">
         </div>
-
         <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;">
         <button class="bk-btn" onclick="exportData()">Download Logs (.json)</button>
         <label class="bk-btn" style="display:block; text-align:center; box-sizing:border-box;">
@@ -126,7 +151,7 @@
         </label>
         <img id="img-preview">
         <input type="text" id="log-input" placeholder="Release" autocomplete="off">
-        <button class="icon-btn" onclick="addLog()">✧</button>
+        <button id="send-btn" class="icon-btn" onclick="handleSend()">✧</button>
     </div>
 </div>
 
@@ -137,13 +162,16 @@
     const input = document.getElementById('log-input');
     const calIndex = document.getElementById('calendar-index');
     let currentBase64 = "";
+    let editingIndex = null;
 
-    // 入力時の視認性向上
+    // --- 【修正】入力中の挙動 ---
     input.addEventListener('focus', () => {
         container.style.paddingBottom = "50vh";
-        setTimeout(() => { container.scrollTop = container.scrollHeight; }, 300);
+        // フォーカス時に勝手に一番下へ飛ばす命令を削除しました
     });
-    input.addEventListener('blur', () => { container.style.paddingBottom = "20px"; });
+    input.addEventListener('blur', () => { 
+        container.style.paddingBottom = "20px"; 
+    });
 
     function toggleSettings() {
         const panel = document.getElementById('settings-panel');
@@ -157,15 +185,9 @@
         localStorage.setItem('showTime', isVisible);
     }
 
-    // --- 自動反映・保存機能 ---
     function autoApplyColors() {
-        const bgInput = document.getElementById('bg-color-in');
-        const txtInput = document.getElementById('text-color-in');
-        
-        // 入力が空なら現在の値（またはデフォルト）を維持
-        const bg = bgInput.value.trim() || getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim();
-        const txt = txtInput.value.trim() || getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
-        
+        const bg = document.getElementById('bg-color-in').value.trim() || getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim();
+        const txt = document.getElementById('text-color-in').value.trim() || getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
         document.documentElement.style.setProperty('--bg-color', bg);
         document.documentElement.style.setProperty('--text-color', txt);
         localStorage.setItem('myTheme', JSON.stringify({bg, txt}));
@@ -173,7 +195,7 @@
 
     function exportData() {
         const data = localStorage.getItem('myLogs');
-        if (!data || data === '[]') return alert("保存するデータがありません");
+        if (!data || data === '[]') return alert("データがありません");
         const blob = new Blob([data], {type: 'application/json'});
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -220,6 +242,11 @@
         }
     }
 
+    function handleSend() {
+        if (editingIndex !== null) saveEdit();
+        else addLog();
+    }
+
     function addLog() {
         const text = input.value.trim();
         if (!text && !currentBase64) return;
@@ -229,9 +256,64 @@
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         logs.push({ d, t, text, img: currentBase64 });
         localStorage.setItem('myLogs', JSON.stringify(logs));
-        input.value = ''; currentBase64 = "";
-        document.getElementById('img-preview').style.display = 'none';
+        resetInput();
+        
+        // ログ追加後は、最新を見たいはずなので一番下へ
+        refresh(true); 
+    }
+
+    let targetLogIndex = null;
+    function showLogOptions(i) {
+        targetLogIndex = i;
+        document.getElementById('custom-dialog').style.display = 'flex';
+    }
+    function closeDialog() {
+        document.getElementById('custom-dialog').style.display = 'none';
+        targetLogIndex = null;
+    }
+
+    function startEdit() {
+        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        const log = logs[targetLogIndex];
+        input.value = log.text;
+        if (log.img) {
+            currentBase64 = log.img;
+            document.getElementById('img-preview').src = log.img;
+            document.getElementById('img-preview').style.display = 'block';
+        }
+        editingIndex = targetLogIndex;
+        input.classList.add('editing');
+        input.placeholder = "Editing...";
+        document.getElementById('send-btn').innerText = "✓";
+        closeDialog();
+        input.focus();
+    }
+
+    function saveEdit() {
+        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        logs[editingIndex].text = input.value.trim();
+        logs[editingIndex].img = currentBase64;
+        localStorage.setItem('myLogs', JSON.stringify(logs));
+        resetInput();
+        refresh(); // 編集保存時は今の場所を維持
+    }
+
+    function confirmDelete() {
+        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        logs.splice(targetLogIndex, 1);
+        localStorage.setItem('myLogs', JSON.stringify(logs));
+        closeDialog();
         refresh();
+    }
+
+    function resetInput() {
+        input.value = '';
+        currentBase64 = "";
+        editingIndex = null;
+        input.classList.remove('editing');
+        input.placeholder = "Release";
+        document.getElementById('send-btn').innerText = "✧";
+        document.getElementById('img-preview').style.display = 'none';
     }
 
     async function shareDay(dateStr) {
@@ -243,7 +325,11 @@
         else { navigator.clipboard.writeText(fullText); alert('コピーしました'); }
     }
 
-    function refresh() {
+    // --- 【修正】リフレッシュ時のスクロール制御 ---
+    function refresh(forceScroll = false) {
+        // 更新前に「今一番下にいるか」をチェック
+        const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+
         container.innerHTML = '';
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         let lastDate = ""; let dateList = [];
@@ -258,11 +344,13 @@
             const item = document.createElement('div');
             item.className = 'log-item';
             let imgHtml = l.img ? `<img src="${l.img}" class="log-img">` : '';
-            item.innerHTML = `<div class="log-body"><span class="time-tag">${l.t}</span>${l.text}${imgHtml}</div><div class="delete-btn" onclick="deleteLog(${i})">✎</div>`;
+            item.innerHTML = `<div class="log-body"><span class="time-tag">${l.t}</span>${l.text}${imgHtml}</div><div class="delete-btn" onclick="showLogOptions(${i})">✎</div>`;
             container.appendChild(item);
         });
         updateIndex(dateList);
-        if (document.activeElement !== input) {
+
+        // 「強制（新規投稿時）」または「元々一番下にいた」ときだけスクロール
+        if (forceScroll || (document.activeElement !== input && isAtBottom)) {
             container.scrollTop = container.scrollHeight;
         }
     }
@@ -281,14 +369,6 @@
         });
     }
 
-    window.deleteLog = (i) => {
-        if(!confirm("削除しますか？")) return;
-        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        logs.splice(i, 1);
-        localStorage.setItem('myLogs', JSON.stringify(logs));
-        refresh();
-    };
-
     window.onload = () => {
         const theme = JSON.parse(localStorage.getItem('myTheme'));
         if(theme) {
@@ -300,9 +380,9 @@
             document.getElementById('time-toggle').checked = (savedShowTime === 'true');
             updateTimeDisplay();
         }
-        refresh();
+        refresh(true); // 初回読み込み時は一番下へ
     };
-    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') addLog(); });
+    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
 </script>
 </body>
 </html>
