@@ -41,11 +41,11 @@
             display: none; position: fixed; top: 90px; right: 60px;
             background: rgba(30, 0, 0, 0.95); padding: 20px; border-radius: 15px; z-index: 999;
             border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px);
+            max-width: 200px;
         }
 
         #log-container { flex: 1; overflow-y: auto; padding: 20px; scroll-behavior: smooth; }
         
-        /* 📅 日付ヘッダー（下線あり） */
         .date-header {
             display: flex; justify-content: space-between; align-items: center;
             font-size: 0.7rem; color: var(--accent-color); margin: 30px 0 15px; opacity: 0.7;
@@ -69,6 +69,9 @@
         }
         .icon-btn { color: var(--accent-color); font-size: 1.4rem; cursor: pointer; background: none; border: none; padding: 0; display: flex; align-items: center; }
         #img-preview { width: 30px; height: 30px; border-radius: 4px; object-fit: cover; display: none; }
+        
+        /* バックアップボタン用 */
+        .bk-btn { width: 100%; padding: 8px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; margin-top: 8px; font-size: 0.7rem; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -80,15 +83,22 @@
     </header>
 
     <div id="settings-panel">
-        <div style="margin-bottom:15px;">
-            <label style="display:block;font-size:0.7rem;opacity:0.7;">Background</label>
-            <input type="text" id="bg-color-in" placeholder="#4a0404" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:5px;width:120px;">
-        </div>
-        <div style="margin-bottom:15px;">
-            <label style="display:block;font-size:0.7rem;opacity:0.7;">Text Color</label>
-            <input type="text" id="text-color-in" placeholder="#f5f5dc" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:5px;width:120px;">
-        </div>
-        <button onclick="applyColors()" style="width:100%;padding:10px;background:var(--accent-color);border:none;border-radius:8px;font-weight:bold;">Save</button>
+        <label style="display:block;font-size:0.7rem;opacity:0.7;">Background</label>
+        <input type="text" id="bg-color-in" placeholder="#4a0404" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:5px;width:100%;box-sizing:border-box;margin-bottom:10px;">
+        
+        <label style="display:block;font-size:0.7rem;opacity:0.7;">Text Color</label>
+        <input type="text" id="text-color-in" placeholder="#f5f5dc" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:5px;width:100%;box-sizing:border-box;margin-bottom:15px;">
+        
+        <button onclick="applyColors()" style="width:100%;padding:10px;background:var(--accent-color);border:none;border-radius:8px;font-weight:bold;cursor:pointer;">Save</button>
+
+        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;">
+        <div style="font-size:0.6rem; opacity:0.5; text-align:center;">Data Backup</div>
+        
+        <button class="bk-btn" onclick="exportData()">Download Logs (.json)</button>
+        <label class="bk-btn" style="display:block; text-align:center; box-sizing:border-box;">
+            Upload Logs (.json)
+            <input type="file" accept=".json" style="display:none;" onchange="importData(event)">
+        </label>
     </div>
 
     <div id="log-container"></div>
@@ -126,6 +136,34 @@
         toggleSettings();
     }
 
+    // --- バックアップ機能 ---
+    function exportData() {
+        const data = localStorage.getItem('myLogs');
+        if (!data || data === '[]') return alert("保存するデータがありません");
+        const blob = new Blob([data], {type: 'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `LogBouquet_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+    }
+
+    function importData(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const json = JSON.parse(e.target.result);
+                if (confirm("データを復元しますか？（現在の日記は上書きされます）")) {
+                    localStorage.setItem('myLogs', JSON.stringify(json));
+                    refresh();
+                    alert("復元完了しました");
+                }
+            } catch (err) { alert("不正なファイルです"); }
+        };
+        reader.readAsText(file);
+    }
+
     function previewImg(inputEl) {
         if (inputEl.files && inputEl.files[0]) {
             const reader = new FileReader();
@@ -158,9 +196,7 @@
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         logs.push({ d, t, text, img: currentBase64 });
         localStorage.setItem('myLogs', JSON.stringify(logs));
-        
-        input.value = '';
-        currentBase64 = "";
+        input.value = ''; currentBase64 = "";
         document.getElementById('img-preview').style.display = 'none';
         refresh();
     }
@@ -175,18 +211,14 @@
     function refresh() {
         container.innerHTML = '';
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        let lastDate = "";
-        let dateList = [];
-
+        let lastDate = ""; let dateList = [];
         logs.forEach((l, i) => {
             if (l.d !== lastDate) {
                 const div = document.createElement('div');
-                div.id = 'date-' + l.d;
-                div.className = 'date-header';
+                div.id = 'date-' + l.d; div.className = 'date-header';
                 div.innerHTML = `<span>${l.d}</span><span class="share-btn" onclick="shareDay('${l.d}')">✈︎</span>`;
                 container.appendChild(div);
-                lastDate = l.d;
-                dateList.push(l.d);
+                lastDate = l.d; dateList.push(l.d);
             }
             const item = document.createElement('div');
             item.className = 'log-item';
