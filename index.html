@@ -9,7 +9,7 @@
     <title>Log Bouquet</title>
     <style>
         :root {
-            --bg-color: #0f1724;
+            --bg-color: #172029;
             --text-color: #f5f5dc;
             --accent-color: #d4af37;
         }
@@ -41,10 +41,17 @@
             display: none; position: fixed; top: 90px; right: 60px;
             background: rgba(30, 0, 0, 0.95); padding: 20px; border-radius: 15px; z-index: 999;
             border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px);
-            max-width: 200px;
+            max-width: 220px;
         }
 
-        #log-container { flex: 1; overflow-y: auto; padding: 20px; scroll-behavior: smooth; }
+        /* ログコンテナの底上げ用スタイル */
+        #log-container { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 20px; 
+            scroll-behavior: smooth; 
+            transition: padding-bottom 0.3s; /* キーボードが出た時のアニメーション */
+        }
         
         .date-header {
             display: flex; justify-content: space-between; align-items: center;
@@ -55,13 +62,16 @@
 
         .log-item { display: flex; justify-content: space-between; margin-bottom: 18px; }
         .log-body { flex: 1; font-size: 0.95rem; line-height: 1.6; }
-        .time-tag { font-size: 0.7rem; opacity: 0.4; margin-right: 10px; }
+        .time-tag { font-size: 0.7rem; opacity: 0.4; margin-right: 10px; display: inline; }
+        body.hide-time .time-tag { display: none; }
+
         .log-img { display: block; max-width: 140px; max-height: 140px; border-radius: 8px; margin-top: 10px; }
         .delete-btn { color: var(--accent-color); opacity: 0.3; cursor: pointer; padding-left: 15px; }
 
         .input-area {
             padding: 15px 20px 40px; background: rgba(0,0,0,0.3);
             backdrop-filter: blur(10px); display: flex; gap: 10px; align-items: center;
+            z-index: 10;
         }
         #log-input {
             flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
@@ -69,12 +79,11 @@
         }
         .icon-btn { color: var(--accent-color); font-size: 1.4rem; cursor: pointer; background: none; border: none; padding: 0; display: flex; align-items: center; }
         #img-preview { width: 30px; height: 30px; border-radius: 4px; object-fit: cover; display: none; }
-        
-        /* バックアップボタン用 */
         .bk-btn { width: 100%; padding: 8px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; margin-top: 8px; font-size: 0.7rem; cursor: pointer; }
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 0.8rem; }
     </style>
 </head>
-<body>
+<body class="show-time">
 
 <div class="main-view">
     <header>
@@ -89,11 +98,14 @@
         <label style="display:block;font-size:0.7rem;opacity:0.7;">Text Color</label>
         <input type="text" id="text-color-in" placeholder="#f5f5dc" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:5px;width:100%;box-sizing:border-box;margin-bottom:15px;">
         
+        <div class="toggle-row">
+            <span>Time Stamp</span>
+            <input type="checkbox" id="time-toggle" checked onchange="updateTimeDisplay()">
+        </div>
+
         <button onclick="applyColors()" style="width:100%;padding:10px;background:var(--accent-color);border:none;border-radius:8px;font-weight:bold;cursor:pointer;">Save</button>
 
         <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;">
-        <div style="font-size:0.6rem; opacity:0.5; text-align:center;">Data Backup</div>
-        
         <button class="bk-btn" onclick="exportData()">Download Logs (.json)</button>
         <label class="bk-btn" style="display:block; text-align:center; box-sizing:border-box;">
             Upload Logs (.json)
@@ -109,7 +121,7 @@
             📷︎
         </label>
         <img id="img-preview">
-        <input type="text" id="log-input" placeholder="Release" autocomplete="off">
+        <input type="text" id="log-input" placeholder="放流する..." autocomplete="off">
         <button class="icon-btn" onclick="addLog()">✧</button>
     </div>
 </div>
@@ -122,9 +134,30 @@
     const calIndex = document.getElementById('calendar-index');
     let currentBase64 = "";
 
+    // --- 入力時の画面ズレ対策 ---
+    input.addEventListener('focus', () => {
+        // キーボード分（画面の約半分）の余白を下に作る
+        container.style.paddingBottom = "50vh";
+        setTimeout(() => {
+            container.scrollTop = container.scrollHeight;
+        }, 300);
+    });
+
+    input.addEventListener('blur', () => {
+        // フォーカスが外れたら余白を元に戻す
+        container.style.paddingBottom = "20px";
+    });
+
     function toggleSettings() {
         const panel = document.getElementById('settings-panel');
         panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+    }
+
+    function updateTimeDisplay() {
+        const isVisible = document.getElementById('time-toggle').checked;
+        if (isVisible) document.body.classList.remove('hide-time');
+        else document.body.classList.add('hide-time');
+        localStorage.setItem('showTime', isVisible);
     }
 
     function applyColors() {
@@ -136,7 +169,6 @@
         toggleSettings();
     }
 
-    // --- バックアップ機能 ---
     function exportData() {
         const data = localStorage.getItem('myLogs');
         if (!data || data === '[]') return alert("保存するデータがありません");
@@ -154,10 +186,9 @@
         reader.onload = function(e) {
             try {
                 const json = JSON.parse(e.target.result);
-                if (confirm("データを復元しますか？（現在の日記は上書きされます）")) {
+                if (confirm("データを復元しますか？")) {
                     localStorage.setItem('myLogs', JSON.stringify(json));
                     refresh();
-                    alert("復元完了しました");
                 }
             } catch (err) { alert("不正なファイルです"); }
         };
@@ -204,8 +235,10 @@
     async function shareDay(dateStr) {
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         const dayLogs = logs.filter(l => l.d === dateStr);
-        const fullText = `【${dateStr}】\n` + dayLogs.map(l => `${l.t} ${l.text}`).join('\n');
+        const showTime = document.getElementById('time-toggle').checked;
+        const fullText = `【${dateStr}】\n` + dayLogs.map(l => showTime ? `${l.t} ${l.text}` : l.text).join('\n');
         if (navigator.share) { await navigator.share({ text: fullText }).catch(()=>{}); }
+        else { navigator.clipboard.writeText(fullText); alert('コピーしました'); }
     }
 
     function refresh() {
@@ -227,7 +260,10 @@
             container.appendChild(item);
         });
         updateIndex(dateList);
-        container.scrollTop = container.scrollHeight;
+        // 入力中（フォーカス時）でなければ一番下へ
+        if (document.activeElement !== input) {
+            container.scrollTop = container.scrollHeight;
+        }
     }
 
     function updateIndex(dates) {
@@ -257,6 +293,11 @@
         if(theme) {
             document.documentElement.style.setProperty('--bg-color', theme.bg);
             document.documentElement.style.setProperty('--text-color', theme.txt);
+        }
+        const savedShowTime = localStorage.getItem('showTime');
+        if (savedShowTime !== null) {
+            document.getElementById('time-toggle').checked = (savedShowTime === 'true');
+            updateTimeDisplay();
         }
         refresh();
     };
