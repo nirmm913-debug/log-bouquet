@@ -1,411 +1,144 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <link rel="apple-touch-icon" href="ane2.jpg">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Log Bouquet</title>
     <style>
-        :root {
-            --bg-color: #172029;
-            --text-color: #f5f5dc;
-            --accent-color: #d4af37;
-            --safe-bottom: env(safe-area-inset-bottom);
-        }
-        body {
-            margin: 0; padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: -apple-system, sans-serif;
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden; /* 全体は動かさない */
-            position: fixed;
-        }
-        .main-view {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            width: 100%;
-        }
-        header {
-            padding: 45px 20px 10px;
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            background: var(--bg-color);
-            flex-shrink: 0;
-        }
-        header h1 { font-size: 1.1rem; font-weight: 300; letter-spacing: 2px; margin: 0; }
-
-        .content-wrapper {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        #log-container { 
-            flex: 1; 
-            overflow-y: auto; 
-            padding: 20px; 
-            -webkit-overflow-scrolling: touch;
-            padding-bottom: 100px; /* 入力欄に被らないための余白 */
-        }
+        :root { --bg-color: #172029; --text-color: #f5f5dc; --accent-color: #d4af37; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
-        #calendar-index {
-            width: 45px; background: rgba(0, 0, 0, 0.2);
-            display: flex; flex-direction: column; align-items: center; padding-top: 20px;
-            overflow-y: auto; border-left: 1px solid rgba(255,255,255,0.05);
-            font-family: monospace; font-size: 0.6rem; color: var(--accent-color);
+        html, body {
+            margin: 0; padding: 0; height: 100%; width: 100%;
+            background-color: var(--bg-color); color: var(--text-color);
+            font-family: -apple-system, sans-serif;
+            overflow: hidden; /* 画面全体のスクロールを禁止 */
         }
-        .index-item { padding: 10px 0; width: 100%; text-align: center; opacity: 0.5; cursor: pointer; }
 
-        .input-area {
-            position: fixed;
-            bottom: 0;
-            left: 0;
+        /* 画面全体を縦に並べる箱 */
+        .app-container {
+            display: flex; flex-direction: column;
+            height: 100dvh; /* 動的ビューポート（キーボード対応） */
             width: 100%;
-            padding: 15px 20px calc(15px + var(--safe-bottom));
-            background: rgba(23, 32, 41, 0.98);
-            backdrop-filter: blur(15px);
-            display: flex; gap: 10px; align-items: center;
-            z-index: 100;
+        }
+
+        header {
+            padding: 40px 20px 10px; flex-shrink: 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        header h1 { font-size: 1rem; font-weight: 300; margin: 0; letter-spacing: 2px; }
+
+        .main-view {
+            flex: 1; display: flex; overflow: hidden; /* ログとカレンダーのエリア */
+        }
+
+        #log-container {
+            flex: 1; overflow-y: auto; padding: 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #calendar-index {
+            width: 40px; border-left: 1px solid rgba(255,255,255,0.05);
+            overflow-y: auto; display: flex; flex-direction: column; align-items: center;
+        }
+
+        /* 入力エリア：常に一番下。固定（fixed）ではなく「積み木」の最後 */
+        .input-area {
+            flex-shrink: 0; padding: 10px 15px calc(10px + env(safe-area-inset-bottom));
+            background: rgba(255,255,255,0.05); backdrop-filter: blur(10px);
             border-top: 1px solid rgba(255,255,255,0.1);
-            box-sizing: border-box;
-            transition: bottom 0.1s ease-out;
+            display: flex; gap: 10px; align-items: center;
         }
 
         #log-input {
             flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 20px; padding: 12px 15px; color: white; outline: none; font-size: 16px;
-            -webkit-appearance: none;
+            border-radius: 20px; padding: 12px 15px; color: white; font-size: 16px; outline: none;
         }
-        #log-input.editing { border-color: var(--accent-color); background: rgba(212, 175, 55, 0.1); }
 
-        .icon-btn { color: var(--accent-color); font-size: 1.4rem; cursor: pointer; background: none; border: none; padding: 0; display: flex; align-items: center; }
-        #img-preview { width: 30px; height: 30px; border-radius: 4px; object-fit: cover; display: none; }
-
-        /* ダイアログと設定パネルは省略せず維持 */
-        #settings-panel {
-            display: none; position: fixed; top: 90px; right: 60px;
-            background: rgba(20, 20, 20, 0.95); padding: 20px; border-radius: 15px; z-index: 999;
-            border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px);
-            max-width: 220px;
-        }
-        #custom-dialog {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center;
-        }
-        .dialog-content {
-            background: #1e1e1e; padding: 25px; border-radius: 20px; width: 260px; text-align: center;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .dialog-content button {
-            width: 100%; padding: 12px; margin: 5px 0; border-radius: 10px; border: none;
-            font-size: 0.9rem; font-weight: bold; cursor: pointer;
-        }
-        .btn-edit { background: var(--accent-color); color: #000; }
-        .btn-delete { background: #4a0404; color: #fff; margin-top: 15px !important; }
-        .btn-cancel { background: rgba(255,255,255,0.1); color: #fff; }
-        .date-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--accent-color); margin: 30px 0 15px; opacity: 0.7; border-bottom: 1px solid rgba(212, 175, 55, 0.2); padding-bottom: 5px; }
-        .share-btn { cursor: pointer; font-size: 1rem; }
-        .log-item { display: flex; justify-content: space-between; margin-bottom: 18px; }
-        .log-body { flex: 1; font-size: 0.95rem; line-height: 1.6; }
-        .time-tag { font-size: 0.7rem; opacity: 0.4; margin-right: 10px; display: inline; }
-        body.hide-time .time-tag { display: none; }
-        .log-img { display: block; max-width: 140px; max-height: 140px; border-radius: 8px; margin-top: 10px; }
-        .delete-btn { color: var(--accent-color); opacity: 0.3; cursor: pointer; padding-left: 15px; }
-        .setting-input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px; width: 100%; box-sizing: border-box; margin-bottom: 12px; border-radius: 5px; font-size: 0.8rem; }
-        .bk-btn { width: 100%; padding: 8px; background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; margin-top: 8px; font-size: 0.7rem; cursor: pointer; }
-        .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 0.8rem; }
+        /* パーツ */
+        .log-item { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .log-body { font-size: 0.95rem; line-height: 1.6; }
+        .time-tag { font-size: 0.7rem; opacity: 0.4; margin-right: 8px; }
+        .delete-btn { color: var(--accent-color); opacity: 0.3; padding-left: 10px; }
+        .date-header { color: var(--accent-color); font-size: 0.7rem; margin: 20px 0 10px; border-bottom: 1px dotted; }
+        .icon-btn { color: var(--accent-color); font-size: 1.4rem; background: none; border: none; cursor: pointer; }
+        .index-item { padding: 10px 0; font-size: 0.6rem; opacity: 0.5; color: var(--accent-color); }
     </style>
 </head>
 <body>
 
-<div id="custom-dialog">
-    <div class="dialog-content">
-        <div style="margin-bottom:20px; font-size:0.9rem; opacity:0.8;">このログをどうしますか？</div>
-        <button class="btn-edit" onclick="startEdit()">編集する</button>
-        <button class="btn-cancel" onclick="closeDialog()">キャンセル</button>
-        <button class="btn-delete" onclick="confirmDelete()">削除する</button>
-    </div>
-</div>
+<div class="app-container">
+    <header><h1>Log Bouquet</h1></header>
 
-<div class="main-view">
-    <header>
-        <h1>Log Bouquet</h1>
-        <div style="cursor:pointer; opacity:0.6; font-size:1.5rem;" onclick="toggleSettings()">＋</div>
-    </header>
-
-    <div id="settings-panel">
-        <label style="display:block;font-size:0.6rem;opacity:0.5;margin-bottom:4px;">Background Color</label>
-        <input type="text" id="bg-color-in" class="setting-input" onchange="autoApplyColors()" placeholder="#172029">
-        <label style="display:block;font-size:0.6rem;opacity:0.5;margin-bottom:4px;">Text Color</label>
-        <input type="text" id="text-color-in" class="setting-input" onchange="autoApplyColors()" placeholder="#f5f5dc">
-        <div class="toggle-row">
-            <span style="opacity:0.7">Time Stamp</span>
-            <input type="checkbox" id="time-toggle" checked onchange="updateTimeDisplay()">
-        </div>
-        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;">
-        <button class="bk-btn" onclick="exportData()">Download Logs (.json)</button>
-        <label class="bk-btn" style="display:block; text-align:center; box-sizing:border-box;">
-            Upload Logs (.json)
-            <input type="file" accept=".json" style="display:none;" onchange="importData(event)">
-        </label>
-    </div>
-
-    <div class="content-wrapper">
+    <div class="main-view">
         <div id="log-container"></div>
         <div id="calendar-index"></div>
     </div>
 
-    <div class="input-area" id="input-area">
-        <label class="icon-btn">
-            <input type="file" id="img-input" accept="image/*" style="display:none;" onchange="previewImg(this)">
-            📷︎
-        </label>
-        <img id="img-preview">
+    <div class="input-area">
         <input type="text" id="log-input" placeholder="Release" autocomplete="off">
-        <button id="send-btn" class="icon-btn" onclick="handleSend()">✧</button>
+        <button class="icon-btn" onclick="addLog()">✧</button>
     </div>
 </div>
 
 <script>
     const container = document.getElementById('log-container');
     const input = document.getElementById('log-input');
-    const inputArea = document.getElementById('input-area');
-    let currentBase64 = "";
-    let editingIndex = null;
 
-    // --- キーボード対策の決定版 ---
-    if (window.visualViewport) {
-        window.visualViewport.addEventListener('scroll', () => {
-            // スクロールしても入力位置を固定
-            window.scrollTo(0, 0);
-        });
-
-        window.visualViewport.addEventListener('resize', () => {
-            const viewportHeight = window.visualViewport.height;
-            const windowHeight = window.innerHeight;
-            const offset = windowHeight - viewportHeight;
-
-            if (offset > 50) {
-                // キーボード表示中
-                inputArea.style.bottom = `${offset}px`;
-                // ログが見えなくならないようコンテナの下部余白を調整
-                container.style.paddingBottom = `40px`;
-            } else {
-                // キーボード非表示
-                inputArea.style.bottom = `0`;
-                container.style.paddingBottom = `100px`;
-            }
-        });
-    }
-
-    // --- 以下、ロジック部分は維持 ---
-    function toggleSettings() {
-        const panel = document.getElementById('settings-panel');
-        panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
-    }
-
-    function updateTimeDisplay() {
-        const isVisible = document.getElementById('time-toggle').checked;
-        if (isVisible) document.body.classList.remove('hide-time');
-        else document.body.classList.add('hide-time');
-        localStorage.setItem('showTime', isVisible);
-    }
-
-    function autoApplyColors() {
-        const bg = document.getElementById('bg-color-in').value.trim() || "#172029";
-        const txt = document.getElementById('text-color-in').value.trim() || "#f5f5dc";
-        document.documentElement.style.setProperty('--bg-color', bg);
-        document.documentElement.style.setProperty('--text-color', txt);
-        localStorage.setItem('myTheme', JSON.stringify({bg, txt}));
-    }
-
-    function previewImg(inputEl) {
-        if (inputEl.files && inputEl.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const MAX = 500;
-                    let w = img.width, h = img.height;
-                    if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } }
-                    else { if (h > MAX) { w *= MAX / h; h = MAX; } }
-                    canvas.width = w; canvas.height = h;
-                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    currentBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                    document.getElementById('img-preview').src = currentBase64;
-                    document.getElementById('img-preview').style.display = 'block';
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(inputEl.files[0]);
-        }
-    }
-
-    function handleSend() {
-        if (editingIndex !== null) saveEdit();
-        else addLog();
-    }
-
+    // ログ保存・表示の最小限ロジック
     function addLog() {
         const text = input.value.trim();
-        if (!text && !currentBase64) return;
+        if (!text) return;
         const now = new Date();
         const d = `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()}`;
         const t = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        logs.push({ d, t, text, img: currentBase64 });
+        logs.push({ d, t, text });
         localStorage.setItem('myLogs', JSON.stringify(logs));
-        resetInput();
+        input.value = '';
         refresh(true);
-    }
-
-    let targetLogIndex = null;
-    function showLogOptions(i) {
-        targetLogIndex = i;
-        document.getElementById('custom-dialog').style.display = 'flex';
-    }
-    function closeDialog() {
-        document.getElementById('custom-dialog').style.display = 'none';
-    }
-
-    function startEdit() {
-        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        const log = logs[targetLogIndex];
-        input.value = log.text;
-        if (log.img) {
-            currentBase64 = log.img;
-            document.getElementById('img-preview').src = log.img;
-            document.getElementById('img-preview').style.display = 'block';
-        }
-        editingIndex = targetLogIndex;
-        input.classList.add('editing');
-        input.placeholder = "Editing...";
-        document.getElementById('send-btn').innerText = "✓";
-        closeDialog();
-        input.focus();
-    }
-
-    function saveEdit() {
-        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        logs[editingIndex].text = input.value.trim();
-        logs[editingIndex].img = currentBase64;
-        localStorage.setItem('myLogs', JSON.stringify(logs));
-        resetInput();
-        refresh();
-    }
-
-    function confirmDelete() {
-        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        logs.splice(targetLogIndex, 1);
-        localStorage.setItem('myLogs', JSON.stringify(logs));
-        closeDialog();
-        refresh();
-    }
-
-    function resetInput() {
-        input.value = ''; currentBase64 = ""; editingIndex = null;
-        input.classList.remove('editing'); input.placeholder = "Release";
-        document.getElementById('send-btn').innerText = "✧";
-        document.getElementById('img-preview').style.display = 'none';
     }
 
     function refresh(forceScroll = false) {
         const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
         container.innerHTML = '';
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        let lastDate = ""; let dateList = [];
+        let lastDate = "";
         logs.forEach((l, i) => {
             if (l.d !== lastDate) {
                 const div = document.createElement('div');
-                div.id = 'date-' + l.d; div.className = 'date-header';
-                div.innerHTML = `<span>${l.d}</span><span class="share-btn" onclick="shareDay('${l.d}')">✈︎</span>`;
+                div.className = 'date-header';
+                div.innerText = l.d;
                 container.appendChild(div);
-                lastDate = l.d; dateList.push(l.d);
+                lastDate = l.d;
             }
             const item = document.createElement('div');
             item.className = 'log-item';
-            let imgHtml = l.img ? `<img src="${l.img}" class="log-img">` : '';
-            item.innerHTML = `<div class="log-body"><span class="time-tag">${l.t}</span>${l.text}${imgHtml}</div><div class="delete-btn" onclick="showLogOptions(${i})">✎</div>`;
+            item.innerHTML = `<div class="log-body"><span class="time-tag">${l.t}</span>${l.text}</div><div class="delete-btn" onclick="deleteLog(${i})">✎</div>`;
             container.appendChild(item);
         });
-        updateIndex(dateList);
-        if (forceScroll || (document.activeElement !== input && isAtBottom)) {
+        
+        if (forceScroll || isAtBottom) {
             container.scrollTop = container.scrollHeight;
         }
     }
 
-    function updateIndex(dates) {
-        const calIndex = document.getElementById('calendar-index');
-        calIndex.innerHTML = '';
-        dates.forEach(date => {
-            const item = document.createElement('div');
-            item.className = 'index-item';
-            item.innerText = date.split('.').pop().padStart(2, '0');
-            item.onclick = () => {
-                const target = document.getElementById('date-' + date);
-                if (target) target.scrollIntoView({behavior: 'smooth'});
-            };
-            calIndex.appendChild(item);
+    function deleteLog(i) {
+        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        logs.splice(i, 1);
+        localStorage.setItem('myLogs', JSON.stringify(logs));
+        refresh();
+    }
+
+    // iOSのキーボード表示時に高さをリサイズするおまじない
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+            document.querySelector('.app-container').style.height = window.visualViewport.height + 'px';
         });
     }
 
-    function exportData() {
-        const data = localStorage.getItem('myLogs');
-        if (!data || data === '[]') return;
-        const blob = new Blob([data], {type: 'application/json'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `LogBouquet_${new Date().toISOString().slice(0,10)}.json`;
-        a.click();
-    }
-
-    function importData(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const json = JSON.parse(e.target.result);
-                if (confirm("データを復元しますか？")) {
-                    localStorage.setItem('myLogs', JSON.stringify(json));
-                    refresh();
-                }
-            } catch (err) { alert("不正なファイルです"); }
-        };
-        reader.readAsText(file);
-    }
-
-    async function shareDay(dateStr) {
-        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        const dayLogs = logs.filter(l => l.d === dateStr);
-        const showTime = document.getElementById('time-toggle').checked;
-        const fullText = `【${dateStr}】\n` + dayLogs.map(l => showTime ? `${l.t} ${l.text}` : l.text).join('\n');
-        if (navigator.share) { await navigator.share({ text: fullText }).catch(()=>{}); }
-        else { navigator.clipboard.writeText(fullText); alert('コピーしました'); }
-    }
-
-    window.onload = () => {
-        const theme = JSON.parse(localStorage.getItem('myTheme'));
-        if(theme) {
-            document.documentElement.style.setProperty('--bg-color', theme.bg);
-            document.documentElement.style.setProperty('--text-color', theme.txt);
-            document.getElementById('bg-color-in').value = theme.bg;
-            document.getElementById('text-color-in').value = theme.txt;
-        }
-        const savedShowTime = localStorage.getItem('showTime');
-        if (savedShowTime !== null) {
-            document.getElementById('time-toggle').checked = (savedShowTime === 'true');
-            updateTimeDisplay();
-        }
-        refresh(true);
-    };
-    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
+    window.onload = () => refresh(true);
+    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') addLog(); });
 </script>
 </body>
 </html>
