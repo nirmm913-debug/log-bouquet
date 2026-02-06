@@ -37,7 +37,21 @@
             border-bottom: 1px solid rgba(255,255,255,0.1);
             background: var(--bg-color);
         }
-        header h1 { font-size: 1.1rem; font-weight: 300; letter-spacing: 2px; margin: 0; }
+        header h1 { font-size: 1.1rem; font-weight: 300; letter-spacing: 2px; margin: 0; cursor: pointer; }
+
+        /* 検索バーエリア（初期は非表示） */
+        .search-area {
+            display: none;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 10px 20px;
+            align-items: center; gap: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+        }
+        #search-input {
+            flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px; padding: 6px 12px; color: white; font-size: 0.85rem; outline: none;
+        }
 
         .main-content {
             flex: 1; display: flex; overflow: hidden;
@@ -52,8 +66,22 @@
         #calendar-index {
             width: 45px; flex-shrink: 0; background: rgba(0, 0, 0, 0.2);
             display: flex; flex-direction: column; align-items: center; 
-            overflow-y: auto; border-left: 1px solid rgba(255,255,255,0.05);
+            border-left: 1px solid rgba(255,255,255,0.05);
             font-family: monospace; font-size: 0.6rem; color: var(--accent-color);
+            position: relative;
+        }
+
+        /* 日付リストのコンテナ（検索ボタンと分けるため） */
+        #date-list-wrapper {
+            flex: 1; width: 100%; overflow-y: auto;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        /* 右下の検索ボタン */
+        .search-trigger {
+            width: 100%; height: 50px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; opacity: 0.6; border-top: 1px solid rgba(255,255,255,0.05);
+            font-size: 1.1rem;
         }
 
         .input-area {
@@ -65,8 +93,6 @@
         }
 
         #log-input { flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; padding: 12px 15px; color: white; outline: none; font-size: 16px; }
-        
-        /* 編集中の入力欄スタイル */
         #log-input.editing-now { border: 1px solid var(--accent-color); background: rgba(212, 175, 55, 0.1); }
 
         .icon-btn { color: var(--accent-color); font-size: 1.4rem; cursor: pointer; background: none; border: none; padding: 0; display: flex; align-items: center; }
@@ -75,21 +101,20 @@
         .date-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--accent-color); margin: 30px 0 15px; opacity: 0.7; border-bottom: 1px solid rgba(212, 175, 55, 0.2); padding-bottom: 5px; }
         .log-item { display: flex; justify-content: space-between; margin-bottom: 18px; }
         .log-body { flex: 1; font-size: 0.95rem; line-height: 1.6; }
+        
+        .hashtag { color: var(--accent-color); text-decoration: none; cursor: pointer; font-weight: bold; border-bottom: 1px dashed var(--accent-color); }
+
         .time-tag { font-size: 0.7rem; opacity: 0.4; margin-right: 10px; display: inline; }
         body.hide-time .time-tag { display: none; }
         .log-img { display: block; max-width: 140px; max-height: 140px; border-radius: 8px; margin-top: 10px; }
         .delete-btn { color: var(--accent-color); opacity: 0.3; cursor: pointer; padding-left: 15px; }
+        
         #settings-panel { display: none; position: fixed; top: 100px; right: 60px; background: rgba(20, 20, 20, 0.95); padding: 20px; border-radius: 15px; z-index: 999; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); max-width: 220px; }
         .setting-input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px; width: 100%; margin-bottom: 12px; border-radius: 5px; font-size: 0.8rem; }
         .bk-btn { width: 100%; padding: 8px; background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; margin-top: 8px; font-size: 0.7rem; cursor: pointer; }
-        .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 0.8rem; }
-
-        /* 追加：編集・削除の選択メニュー用スタイル */
-        #edit-menu {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); z-index: 10000; justify-content: center; align-items: center;
-        }
-        .menu-card { background: #222; padding: 20px; border-radius: 20px; width: 250px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        
+        #edit-menu { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; justify-content: center; align-items: center; }
+        .menu-card { background: #222; padding: 20px; border-radius: 20px; width: 250px; text-align: center; }
         .menu-card button { width: 100%; padding: 12px; margin: 5px 0; border-radius: 10px; border: none; font-size: 1rem; cursor: pointer; }
     </style>
 </head>
@@ -105,16 +130,22 @@
 
 <div class="app-wrapper">
     <header>
-        <h1>Log Bouquet</h1>
+        <h1 onclick="clearSearch()">Log Bouquet</h1>
         <div style="cursor:pointer; opacity:0.6; font-size:1.5rem;" onclick="toggleSettings()">＋</div>
     </header>
+
+    <div class="search-area" id="search-bar">
+        <span style="font-size:0.8rem; opacity:0.5;">🔎</span>
+        <input type="text" id="search-input" placeholder="ログを検索..." oninput="refresh()" autocomplete="off">
+        <span id="search-clear" style="cursor:pointer; display:none; font-size:0.8rem;" onclick="clearSearch()">✕</span>
+    </div>
 
     <div id="settings-panel">
         <label style="display:block;font-size:0.6rem;opacity:0.5;margin-bottom:4px;">Background</label>
         <input type="text" id="bg-color-in" class="setting-input" onchange="autoApplyColors()">
         <label style="display:block;font-size:0.6rem;opacity:0.5;margin-bottom:4px;">Text Color</label>
         <input type="text" id="text-color-in" class="setting-input" onchange="autoApplyColors()">
-        <div class="toggle-row">
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; margin-bottom:5px;">
             <span style="opacity:0.7">Time Stamp</span>
             <input type="checkbox" id="time-toggle" checked onchange="updateTimeDisplay()">
         </div>
@@ -128,10 +159,15 @@
 
     <div class="main-content">
         <div id="log-container"></div>
-        <div id="calendar-index"></div>
+        <div id="calendar-index">
+            <div id="date-list-wrapper"></div>
+            <div class="search-trigger" onclick="toggleSearchBar()">
+                <span style="transform: rotate(0deg); display: inline-block;">⌥</span>
+            </div>
+        </div>
     </div>
 
-    <div class="input-area">
+    <div class="input-area" id="footer-input-area">
         <label class="icon-btn">
             <input type="file" id="img-input" accept="image/*" style="display:none;" onchange="previewImg(this)">
             📷︎
@@ -145,10 +181,12 @@
 <script>
     const container = document.getElementById('log-container');
     const input = document.getElementById('log-input');
-    const calIndex = document.getElementById('calendar-index');
+    const searchInput = document.getElementById('search-input');
+    const searchBar = document.getElementById('search-bar');
+    const dateListWrapper = document.getElementById('date-list-wrapper');
     let currentBase64 = "";
-    let selectedIdx = null; // 操作対象のログ番号
-    let editingIdx = null;  // 現在編集中のログ番号
+    let selectedIdx = null;
+    let editingIdx = null;
 
     function updateHeight() {
         const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
@@ -163,6 +201,34 @@
         window.visualViewport.addEventListener('scroll', () => { window.scrollTo(0, 0); });
     }
     window.addEventListener('resize', updateHeight);
+
+    // 検索バーの表示切り替え
+    function toggleSearchBar() {
+        if (searchBar.style.display === 'flex') {
+            clearSearch();
+            searchBar.style.display = 'none';
+        } else {
+            searchBar.style.display = 'flex';
+            searchInput.focus();
+        }
+    }
+
+    function formatText(text) {
+        return text.replace(/[#＃]([^\s#＃]+)/g, (match, tag) => {
+            return `<span class="hashtag" onclick="setSearchValue('${tag}')">${match}</span>`;
+        });
+    }
+
+    function setSearchValue(tag) {
+        searchBar.style.display = 'flex';
+        searchInput.value = tag;
+        refresh();
+    }
+
+    function clearSearch() {
+        searchInput.value = '';
+        refresh();
+    }
 
     function toggleSettings() {
         const panel = document.getElementById('settings-panel');
@@ -184,14 +250,11 @@
         localStorage.setItem('myTheme', JSON.stringify({bg, txt}));
     }
 
-    // --- 編集・削除メニューの制御 ---
     function openMenu(i) {
         selectedIdx = i;
         document.getElementById('edit-menu').style.display = 'flex';
     }
-    function closeMenu() {
-        document.getElementById('edit-menu').style.display = 'none';
-    }
+    function closeMenu() { document.getElementById('edit-menu').style.display = 'none'; }
 
     function startEdit() {
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
@@ -213,17 +276,12 @@
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         logs.splice(selectedIdx, 1);
         localStorage.setItem('myLogs', JSON.stringify(logs));
-        closeMenu();
-        refresh();
+        closeMenu(); refresh();
     }
 
-    // 送信ボタンの役割を切り替え
     function handleSend() {
-        if (editingIdx !== null) {
-            saveEdit();
-        } else {
-            addLog();
-        }
+        if (editingIdx !== null) saveEdit();
+        else addLog();
     }
 
     function saveEdit() {
@@ -231,7 +289,6 @@
         logs[editingIdx].text = input.value.trim();
         logs[editingIdx].img = currentBase64;
         localStorage.setItem('myLogs', JSON.stringify(logs));
-        
         editingIdx = null;
         input.classList.remove('editing-now');
         input.value = ''; currentBase64 = "";
@@ -241,9 +298,16 @@
 
     function refresh() {
         container.innerHTML = '';
-        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        const allLogs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        const query = searchInput.value.trim().toLowerCase();
+        
+        document.getElementById('search-clear').style.display = query ? 'inline' : 'none';
+
+        const logsToShow = allLogs.map((l, originalIdx) => ({...l, originalIdx}))
+            .filter(l => !query || l.text.toLowerCase().includes(query));
+
         let lastDate = ""; let dateList = [];
-        logs.forEach((l, i) => {
+        logsToShow.forEach((l) => {
             if (l.d !== lastDate) {
                 const div = document.createElement('div');
                 div.id = 'date-' + l.d; div.className = 'date-header';
@@ -254,12 +318,11 @@
             const item = document.createElement('div');
             item.className = 'log-item';
             let imgHtml = l.img ? `<img src="${l.img}" class="log-img">` : '';
-            // onclickをopenMenuに変更
-            item.innerHTML = `<div class="log-body"><span class="time-tag">${l.t}</span>${l.text}${imgHtml}</div><div class="delete-btn" onclick="openMenu(${i})">✎</div>`;
+            item.innerHTML = `<div class="log-body"><span class="time-tag">${l.t}</span>${formatText(l.text)}${imgHtml}</div><div class="delete-btn" onclick="openMenu(${l.originalIdx})">✎</div>`;
             container.appendChild(item);
         });
         updateIndex(dateList);
-        container.scrollTop = container.scrollHeight;
+        if (!query) container.scrollTop = container.scrollHeight;
     }
 
     function addLog() {
@@ -277,7 +340,7 @@
     }
 
     function updateIndex(dates) {
-        calIndex.innerHTML = '';
+        dateListWrapper.innerHTML = '';
         dates.forEach(date => {
             const item = document.createElement('div');
             item.className = 'index-item';
@@ -286,7 +349,7 @@
                 const target = document.getElementById('date-' + date);
                 if (target) target.scrollIntoView({behavior: 'smooth'});
             };
-            calIndex.appendChild(item);
+            dateListWrapper.appendChild(item);
         });
     }
 
@@ -364,7 +427,6 @@
         }
         refresh();
     };
-    // EnterキーでもhandleSendを呼ぶ
     input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
 </script>
 </body>
