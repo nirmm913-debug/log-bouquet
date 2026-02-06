@@ -52,7 +52,6 @@
             border-radius: 10px; padding: 6px 12px; color: white; font-size: 0.85rem; outline: none;
         }
 
-        /* タグクラウドパネル */
         #tag-cloud-panel {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 500;
@@ -61,7 +60,6 @@
         }
         .tag-cloud-title { color: var(--accent-color); font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 20px; opacity: 0.8; }
         .cloud-tag { display: inline-block; margin: 8px; cursor: pointer; color: var(--text-color); transition: 0.2s; }
-        .cloud-tag:active { transform: scale(0.9); }
 
         .main-content {
             flex: 1; display: flex; overflow: hidden;
@@ -85,7 +83,6 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* 右サイドのボタン群 */
         .side-btn {
             width: 100%; height: 50px; display: flex; align-items: center; justify-content: center;
             cursor: pointer; opacity: 0.6; font-size: 1.1rem;
@@ -106,8 +103,16 @@
 
         .icon-btn { color: var(--accent-color); font-size: 1.4rem; cursor: pointer; background: none; border: none; padding: 0; display: flex; align-items: center; }
         #img-preview { width: 30px; height: 30px; border-radius: 4px; object-fit: cover; display: none; }
+        
         .index-item { padding: 10px 0; width: 100%; text-align: center; opacity: 0.5; cursor: pointer; }
-        .date-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--accent-color); margin: 30px 0 15px; opacity: 0.7; border-bottom: 1px solid rgba(212, 175, 55, 0.2); padding-bottom: 5px; }
+        .index-month { padding: 15px 0 5px; width: 100%; text-align: center; opacity: 0.9; font-weight: bold; color: var(--text-color); border-bottom: 1px solid rgba(212, 175, 55, 0.3); margin-bottom: 5px; font-size: 0.7rem; }
+        
+        /* ログ本文の月区切り */
+        .month-divider { margin: 40px 0 20px; text-align: center; position: relative; }
+        .month-divider span { background: var(--bg-color); padding: 0 15px; font-size: 0.8rem; letter-spacing: 3px; color: var(--accent-color); font-weight: bold; position: relative; z-index: 1; }
+        .month-divider::after { content: ""; position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: rgba(212, 175, 55, 0.2); z-index: 0; }
+
+        .date-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--accent-color); margin: 20px 0 15px; opacity: 0.7; border-bottom: 1px solid rgba(212, 175, 55, 0.2); padding-bottom: 5px; }
         .log-item { display: flex; justify-content: space-between; margin-bottom: 18px; }
         .log-body { flex: 1; font-size: 0.95rem; line-height: 1.6; }
         
@@ -215,12 +220,9 @@
     }
     window.addEventListener('resize', updateHeight);
 
-    // タグクラウドを表示
     function showTagCloud() {
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         const tagMap = {};
-        
-        // 全ログからタグを抽出してカウント
         logs.forEach(l => {
             const tags = l.text.match(/[#＃][^\s#＃]+/g);
             if (tags) {
@@ -230,21 +232,15 @@
                 });
             }
         });
-
         const cloudContent = document.getElementById('tag-cloud-content');
         cloudContent.innerHTML = '';
-        
-        // タグを個数順に並び替え
         const sortedTags = Object.entries(tagMap).sort((a, b) => b[1] - a[1]);
-
         if (sortedTags.length === 0) {
             cloudContent.innerHTML = '<p style="opacity:0.5; font-size:0.9rem;">タグが見つかりません</p>';
         }
-
         sortedTags.forEach(([tag, count]) => {
             const span = document.createElement('span');
             span.className = 'cloud-tag';
-            // 個数に応じてフォントサイズを可変にする (12px〜32px)
             const size = Math.min(Math.max(count * 4 + 12, 12), 32);
             span.style.fontSize = size + 'px';
             span.style.opacity = Math.min(0.4 + (count * 0.1), 1);
@@ -255,7 +251,6 @@
             };
             cloudContent.appendChild(span);
         });
-
         document.getElementById('tag-cloud-panel').style.display = 'block';
     }
 
@@ -356,14 +351,27 @@
         container.innerHTML = '';
         const allLogs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         const query = searchInput.value.trim().toLowerCase();
-        
         document.getElementById('search-clear').style.display = query ? 'inline' : 'none';
-
         const logsToShow = allLogs.map((l, originalIdx) => ({...l, originalIdx}))
             .filter(l => !query || l.text.toLowerCase().includes(query));
+        
+        let lastDate = ""; 
+        let lastMonth = ""; 
+        let dateList = [];
 
-        let lastDate = ""; let dateList = [];
         logsToShow.forEach((l) => {
+            const parts = l.d.split('.');
+            const currentMonth = parts[0] + '.' + parts[1];
+
+            // ログ本文内の月区切り挿入
+            if (currentMonth !== lastMonth) {
+                const monthDiv = document.createElement('div');
+                monthDiv.className = 'month-divider';
+                monthDiv.innerHTML = `<span>${currentMonth.replace('.',' / ')}</span>`;
+                container.appendChild(monthDiv);
+                lastMonth = currentMonth;
+            }
+
             if (l.d !== lastDate) {
                 const div = document.createElement('div');
                 div.id = 'date-' + l.d; div.className = 'date-header';
@@ -397,10 +405,20 @@
 
     function updateIndex(dates) {
         dateListWrapper.innerHTML = '';
+        let lastMonth = "";
         dates.forEach(date => {
+            const parts = date.split('.');
+            const month = parts[0] + '.' + parts[1];
+            if (month !== lastMonth) {
+                const monthDiv = document.createElement('div');
+                monthDiv.className = 'index-month';
+                monthDiv.innerText = parts[1].padStart(2, '0');
+                dateListWrapper.appendChild(monthDiv);
+                lastMonth = month;
+            }
             const item = document.createElement('div');
             item.className = 'index-item';
-            item.innerText = date.split('.').pop().padStart(2, '0');
+            item.innerText = parts[2].padStart(2, '0');
             item.onclick = () => {
                 const target = document.getElementById('date-' + date);
                 if (target) target.scrollIntoView({behavior: 'smooth'});
