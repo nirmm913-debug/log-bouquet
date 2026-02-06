@@ -39,7 +39,6 @@
         }
         header h1 { font-size: 1.1rem; font-weight: 300; letter-spacing: 2px; margin: 0; cursor: pointer; }
 
-        /* 検索バーエリア（初期は非表示） */
         .search-area {
             display: none;
             background: rgba(0, 0, 0, 0.4);
@@ -68,20 +67,19 @@
             display: flex; flex-direction: column; align-items: center; 
             border-left: 1px solid rgba(255,255,255,0.05);
             font-family: monospace; font-size: 0.6rem; color: var(--accent-color);
-            position: relative;
         }
 
-        /* 日付リストのコンテナ（検索ボタンと分けるため） */
         #date-list-wrapper {
             flex: 1; width: 100%; overflow-y: auto;
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* 右下の検索ボタン */
+        /* 虫眼鏡ボタン（右端最下部） */
         .search-trigger {
-            width: 100%; height: 50px; display: flex; align-items: center; justify-content: center;
+            width: 100%; height: 60px; display: flex; align-items: center; justify-content: center;
             cursor: pointer; opacity: 0.6; border-top: 1px solid rgba(255,255,255,0.05);
-            font-size: 1.1rem;
+            font-size: 1.2rem;
+            padding-bottom: env(safe-area-inset-bottom); /* iPhoneのバーを考慮 */
         }
 
         .input-area {
@@ -135,7 +133,7 @@
     </header>
 
     <div class="search-area" id="search-bar">
-        <span style="font-size:0.8rem; opacity:0.5;">🔎</span>
+        <span style="font-size:0.8rem; opacity:0.5;">🔍</span>
         <input type="text" id="search-input" placeholder="ログを検索..." oninput="refresh()" autocomplete="off">
         <span id="search-clear" style="cursor:pointer; display:none; font-size:0.8rem;" onclick="clearSearch()">✕</span>
     </div>
@@ -162,7 +160,7 @@
         <div id="calendar-index">
             <div id="date-list-wrapper"></div>
             <div class="search-trigger" onclick="toggleSearchBar()">
-                <span style="transform: rotate(0deg); display: inline-block;">⌥</span>
+                <span>🔍</span>
             </div>
         </div>
     </div>
@@ -202,14 +200,13 @@
     }
     window.addEventListener('resize', updateHeight);
 
-    // 検索バーの表示切り替え
     function toggleSearchBar() {
         if (searchBar.style.display === 'flex') {
             clearSearch();
             searchBar.style.display = 'none';
         } else {
             searchBar.style.display = 'flex';
-            searchInput.focus();
+            searchInput.focus(); // 入力欄に自動フォーカス
         }
     }
 
