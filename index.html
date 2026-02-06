@@ -35,8 +35,9 @@
         header h1 { font-size: 1.1rem; font-weight: 300; letter-spacing: 2px; margin: 0; cursor: pointer; }
 
         .header-icons { display: flex; gap: 20px; align-items: center; }
-        .h-btn { cursor: pointer; opacity: 0.6; font-size: 1.3rem; transition: 0.2s; }
+        .h-btn { cursor: pointer; opacity: 0.6; transition: 0.2s; line-height: 1; }
 
+        /* 検索バー */
         .search-area {
             display: none; background: rgba(0, 0, 0, 0.4); padding: 10px 20px;
             align-items: center; gap: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -55,7 +56,7 @@
             -webkit-overflow-scrolling: touch; scroll-behavior: smooth;
         }
 
-        /* インデックスバー：余白を最適化 */
+        /* サイドバー（インデックスバー） */
         #calendar-index {
             position: absolute; right: 0; top: 0; bottom: 0;
             width: var(--index-width); background: rgba(0, 0, 0, 0.4);
@@ -70,27 +71,19 @@
 
         #date-list-wrapper { flex: 1; width: 100%; overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 10px 0; }
 
-        /* インデックス内の下部ボタン群の間隔を広く */
+        /* サイドバー下部ボタン（黄金比設定） */
         .index-bottom-btns {
             width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 2px; /* ボタン間の余白 */
-            padding: 5px 0;
+            display: flex; flex-direction: column;
+            gap: 2px; padding: 5px 0;
             border-top: 1px solid rgba(255,255,255,0.1);
             background: rgba(255,255,255,0.03);
         }
-
         .side-btn {
             width: 100%; height: 40px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; opacity: 0.6; transition: 0.2s;
+            cursor: pointer; opacity: 0.6; transition: 0.15s; font-size: 1.2rem;
         }
-        .side-btn:active { opacity: 1; background: rgba(255,255,255,0.1); }
-
-        .footer-nav { padding-bottom: env(safe-area-inset-bottom); background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.1); }
-        .input-area { padding: 12px 15px; display: flex; gap: 12px; align-items: center; }
-        #log-input { flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 10px 18px; color: white; outline: none; font-size: 16px; }
-        #log-input.editing-now { border: 1px solid var(--accent-color); background: rgba(212, 175, 55, 0.1); }
+        .side-btn:active { background: rgba(255,255,255,0.1); opacity: 1; }
 
         /* ログ装飾 */
         .month-divider { margin: 40px 0 20px; text-align: center; position: relative; scroll-margin-top: 20px; }
@@ -106,10 +99,11 @@
         body.hide-time .time-tag { display: none; }
         .edit-trigger { color: var(--accent-color); opacity: 0.3; cursor: pointer; padding-left: 15px; }
 
+        /* パネル・設定メニュー */
         #settings-panel { display: none; position: fixed; top: 80px; right: 20px; background: rgba(20, 20, 20, 0.95); padding: 20px; border-radius: 15px; z-index: 2000; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); width: 240px; }
         .setting-input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px; width: 100%; margin-bottom: 12px; border-radius: 5px; font-size: 0.8rem; }
         .bk-btn { width: 100%; padding: 10px; background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; margin-top: 8px; font-size: 0.7rem; cursor: pointer; text-align: center; display: block; }
-        
+
         #edit-menu { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; justify-content: center; align-items: center; }
         .menu-card { background: #222; padding: 20px; border-radius: 20px; width: 250px; text-align: center; }
         .menu-card button { width: 100%; padding: 12px; margin: 5px 0; border-radius: 10px; border: none; font-size: 1rem; cursor: pointer; }
@@ -120,6 +114,12 @@
         }
         .jump-item, .cloud-tag { padding: 15px; display: inline-block; color: var(--text-color); }
         .index-item { padding: 10px 0; width: 100%; text-align: center; opacity: 0.4; font-size: 0.7rem; font-family: monospace; cursor: pointer; }
+
+        /* 入力エリア */
+        .footer-nav { padding-bottom: env(safe-area-inset-bottom); background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.1); }
+        .input-area { padding: 12px 15px; display: flex; gap: 12px; align-items: center; }
+        #log-input { flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 10px 18px; color: white; outline: none; font-size: 16px; }
+        #log-input.editing-now { border: 1px solid var(--accent-color); background: rgba(212, 175, 55, 0.1); }
     </style>
 </head>
 <body class="show-time">
@@ -146,9 +146,8 @@
     <header>
         <h1 onclick="clearSearch()">Log Bouquet</h1>
         <div class="header-icons">
-            <span class="h-btn" onclick="showMonthJump()">🗓</span>
-            <span class="h-btn" onclick="toggleIndex()" id="index-trigger">≡</span>
-            <span class="h-btn" onclick="toggleSettings()">＋</span>
+            <span class="h-btn" onclick="toggleIndex()" id="index-trigger" style="font-size: 1.6rem; font-weight: bold;">≡</span>
+            <span class="h-btn" onclick="toggleSettings()" style="font-size: 1.3rem;">＋</span>
         </div>
     </header>
 
@@ -180,9 +179,10 @@
         <div id="calendar-index">
             <div id="date-list-wrapper"></div>
             <div class="index-bottom-btns">
+                <div class="side-btn" onclick="showMonthJump()" title="Calendar">🗓</div>
                 <div class="side-btn" onclick="showTagCloud()" title="Tags">＃</div>
                 <div class="side-btn" onclick="toggleSearchBar()" title="Search">🔍</div>
-                <div class="side-btn" onclick="toggleIndex()" style="font-size:0.6rem; opacity:0.8;">CLOSE</div>
+                <div class="side-btn" onclick="toggleIndex()" style="font-size:0.55rem; opacity:0.8; margin-top: 2px;">CLOSE</div>
             </div>
         </div>
     </div>
@@ -211,6 +211,7 @@
     let selectedIdx = null;
     let editingIdx = null;
 
+    // --- インデックス & スワイプ ---
     function toggleIndex() {
         document.body.classList.toggle('index-open');
         document.getElementById('index-trigger').style.opacity = document.body.classList.contains('index-open') ? "1" : "0.6";
@@ -224,6 +225,7 @@
         if (diff < -60) document.body.classList.remove('index-open');
     });
 
+    // --- 検索機能 ---
     function toggleSearchBar() {
         if (searchBar.style.display === 'flex') { clearSearch(); searchBar.style.display = 'none'; }
         else { searchBar.style.display = 'flex'; searchInput.focus(); }
@@ -231,17 +233,21 @@
     function clearSearch() { searchInput.value = ''; refresh(); }
     function setSearchValue(tag) { searchBar.style.display = 'flex'; searchInput.value = tag; refresh(); }
 
+    // --- ログ更新表示 ---
     function refresh() {
         container.innerHTML = '';
         const allLogs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         const query = searchInput.value.trim().toLowerCase();
+        
         const logsToShow = allLogs.map((l, originalIdx) => ({...l, originalIdx}))
             .filter(l => !query || l.text.toLowerCase().includes(query));
 
         let lastDate = ""; let lastMonth = ""; let dateList = [];
+
         logsToShow.forEach((l) => {
             const parts = l.d.split('.');
             const currentMonth = parts[0] + '.' + parts[1];
+
             if (!query && currentMonth !== lastMonth) {
                 const mDiv = document.createElement('div');
                 mDiv.className = 'month-divider';
@@ -250,6 +256,7 @@
                 container.appendChild(mDiv);
                 lastMonth = currentMonth;
             }
+
             if (l.d !== lastDate) {
                 const dDiv = document.createElement('div');
                 dDiv.id = 'date-' + l.d; dDiv.className = 'date-header';
@@ -257,10 +264,15 @@
                 container.appendChild(dDiv);
                 lastDate = l.d; dateList.push(l.d);
             }
+
             const item = document.createElement('div');
             item.className = 'log-item';
             let imgHtml = l.img ? `<img src="${l.img}" class="log-img">` : '';
-            item.innerHTML = `<div class="log-body"><span class="time-tag">${l.t}</span>${formatText(l.text)}${imgHtml}</div><div class="edit-trigger" onclick="openMenu(${l.originalIdx})">✎</div>`;
+            item.innerHTML = `
+                <div class="log-body">
+                    <span class="time-tag">${l.t}</span>${formatText(l.text)}${imgHtml}
+                </div>
+                <div class="edit-trigger" onclick="openMenu(${l.originalIdx})">✎</div>`;
             container.appendChild(item);
         });
         updateIndex(dateList);
@@ -271,14 +283,21 @@
         return text.replace(/[#＃]([^\s#＃]+)/g, (match, tag) => `<span class="hashtag" onclick="setSearchValue('${tag}')">${match}</span>`);
     }
 
+    // --- 編集・削除・送信 ---
     function openMenu(i) { selectedIdx = i; document.getElementById('edit-menu').style.display = 'flex'; }
     function closeMenu() { document.getElementById('edit-menu').style.display = 'none'; }
     function startEdit() {
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         const target = logs[selectedIdx];
         input.value = target.text;
-        if (target.img) { currentBase64 = target.img; document.getElementById('img-preview').src = currentBase64; document.getElementById('img-preview').style.display = 'block'; }
-        editingIdx = selectedIdx; input.classList.add('editing-now'); closeMenu(); input.focus();
+        if (target.img) {
+            currentBase64 = target.img;
+            document.getElementById('img-preview').src = currentBase64;
+            document.getElementById('img-preview').style.display = 'block';
+        }
+        editingIdx = selectedIdx;
+        input.classList.add('editing-now');
+        closeMenu(); input.focus();
     }
     function deleteConfirm() {
         if(!confirm("削除しますか？")) return;
@@ -287,17 +306,28 @@
         localStorage.setItem('myLogs', JSON.stringify(logs));
         closeMenu(); refresh();
     }
-
     function handleSend() {
         const text = input.value.trim();
         if (!text && !currentBase64) return;
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        if (editingIdx !== null) { logs[editingIdx].text = text; logs[editingIdx].img = currentBase64; editingIdx = null; input.classList.remove('editing-now'); }
-        else { const now = new Date(); const d = now.getFullYear() + '.' + (now.getMonth()+1) + '.' + now.getDate(); const t = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0'); logs.push({ d, t, text, img: currentBase64 }); }
+        if (editingIdx !== null) {
+            logs[editingIdx].text = text;
+            logs[editingIdx].img = currentBase64;
+            editingIdx = null;
+            input.classList.remove('editing-now');
+        } else {
+            const now = new Date();
+            const d = now.getFullYear() + '.' + (now.getMonth()+1) + '.' + now.getDate();
+            const t = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+            logs.push({ d, t, text, img: currentBase64 });
+        }
         localStorage.setItem('myLogs', JSON.stringify(logs));
-        input.value = ''; currentBase64 = ""; document.getElementById('img-preview').style.display = 'none'; refresh();
+        input.value = ''; currentBase64 = "";
+        document.getElementById('img-preview').style.display = 'none';
+        refresh();
     }
 
+    // --- インデックスバー管理 ---
     function updateIndex(dates) {
         dateListWrapper.innerHTML = '';
         let lastM = "";
@@ -318,6 +348,7 @@
         });
     }
 
+    // --- 月間ジャンプ & タグクラウド ---
     function showMonthJump() {
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         const months = [...new Set(logs.map(l => l.d.split('.').slice(0,2).join('.')))].sort().reverse();
@@ -327,7 +358,11 @@
             const div = document.createElement('div');
             div.className = 'jump-item'; div.style = "display:block; font-size:1.2rem; cursor:pointer; padding:15px;";
             div.innerText = m.replace('.', ' / ');
-            div.onclick = () => { document.getElementById('month-' + m).scrollIntoView({behavior: 'smooth'}); document.getElementById('month-jump-panel').style.display = 'none'; };
+            div.onclick = () => {
+                const target = document.getElementById('month-' + m);
+                if(target) target.scrollIntoView({behavior: 'smooth'});
+                document.getElementById('month-jump-panel').style.display = 'none';
+            };
             content.appendChild(div);
         });
         document.getElementById('month-jump-panel').style.display = 'block';
@@ -344,7 +379,8 @@
         content.innerHTML = '';
         Object.entries(tagMap).sort((a,b)=>b[1]-a[1]).forEach(([tag, count]) => {
             const span = document.createElement('span');
-            span.className = 'cloud-tag'; span.style.fontSize = Math.min(count * 4 + 14, 30) + 'px';
+            span.className = 'cloud-tag';
+            span.style.fontSize = Math.min(count * 4 + 14, 30) + 'px';
             span.innerText = `#${tag}`;
             span.onclick = () => { setSearchValue(tag); document.getElementById('tag-cloud-panel').style.display = 'none'; };
             content.appendChild(span);
@@ -352,6 +388,7 @@
         document.getElementById('tag-cloud-panel').style.display = 'block';
     }
 
+    // --- 画像処理 (圧縮) ---
     function previewImg(el) {
         if (!el.files[0]) return;
         const reader = new FileReader();
@@ -373,25 +410,43 @@
         reader.readAsDataURL(el.files[0]);
     }
 
-    function toggleSettings() { const p = document.getElementById('settings-panel'); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; }
+    // --- 設定・バックアップ ---
+    function toggleSettings() {
+        const p = document.getElementById('settings-panel');
+        p.style.display = (p.style.display === 'block') ? 'none' : 'block';
+    }
+
     async function shareDay(date) {
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         const dayLogs = logs.filter(l => l.d === date);
-        const txt = `【${date}】\n` + dayLogs.map(l => `${l.t} ${l.text}`).join('\n');
+        const st = document.getElementById('time-toggle').checked;
+        const txt = `【${date}】\n` + dayLogs.map(l => st ? `${l.t} ${l.text}` : l.text).join('\n');
         if (navigator.share) await navigator.share({ text: txt }).catch(()=>{});
         else { navigator.clipboard.writeText(txt); alert('コピーしました'); }
     }
+
     function exportData() {
         const data = localStorage.getItem('myLogs');
+        if (!data || data === '[]') return alert("データがありません");
         const blob = new Blob([data], {type: 'application/json'});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
         a.download = `LogBouquet_${new Date().toISOString().slice(0,10)}.json`; a.click();
     }
+
     function importData(e) {
         const reader = new FileReader();
-        reader.onload = ev => { if (confirm("データを復元しますか？")) { localStorage.setItem('myLogs', ev.target.result); refresh(); } };
+        reader.onload = ev => {
+            try {
+                JSON.parse(ev.target.result);
+                if (confirm("データを復元しますか？")) {
+                    localStorage.setItem('myLogs', ev.target.result);
+                    refresh();
+                }
+            } catch (err) { alert("不正なファイルです"); }
+        };
         reader.readAsText(e.target.files[0]);
     }
+
     function autoApplyColors() {
         const bg = document.getElementById('bg-color-in').value || "#172029";
         const txt = document.getElementById('text-color-in').value || "#f5f5dc";
@@ -399,17 +454,26 @@
         document.documentElement.style.setProperty('--text-color', txt);
         localStorage.setItem('myTheme', JSON.stringify({bg, txt}));
     }
+
     function updateTimeDisplay() {
         const v = document.getElementById('time-toggle').checked;
         document.body.classList.toggle('hide-time', !v);
         localStorage.setItem('showTime', v);
     }
 
+    // --- 初期化 ---
     window.onload = () => {
         const theme = JSON.parse(localStorage.getItem('myTheme'));
-        if(theme) { document.getElementById('bg-color-in').value = theme.bg; document.getElementById('text-color-in').value = theme.txt; autoApplyColors(); }
+        if(theme) {
+            document.getElementById('bg-color-in').value = theme.bg;
+            document.getElementById('text-color-in').value = theme.txt;
+            autoApplyColors();
+        }
         const st = localStorage.getItem('showTime');
-        if (st !== null) { document.getElementById('time-toggle').checked = (st === 'true'); updateTimeDisplay(); }
+        if (st !== null) {
+            document.getElementById('time-toggle').checked = (st === 'true');
+            updateTimeDisplay();
+        }
         refresh();
     };
     input.addEventListener('keypress', e => { if (e.key === 'Enter') handleSend(); });
