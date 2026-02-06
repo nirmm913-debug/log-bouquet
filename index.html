@@ -52,6 +52,17 @@
             border-radius: 10px; padding: 6px 12px; color: white; font-size: 0.85rem; outline: none;
         }
 
+        /* タグクラウドパネル */
+        #tag-cloud-panel {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 500;
+            padding: 100px 40px; text-align: center; overflow-y: auto;
+            backdrop-filter: blur(10px);
+        }
+        .tag-cloud-title { color: var(--accent-color); font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 20px; opacity: 0.8; }
+        .cloud-tag { display: inline-block; margin: 8px; cursor: pointer; color: var(--text-color); transition: 0.2s; }
+        .cloud-tag:active { transform: scale(0.9); }
+
         .main-content {
             flex: 1; display: flex; overflow: hidden;
         }
@@ -74,13 +85,13 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* 虫眼鏡ボタン（右端最下部） */
-        .search-trigger {
-            width: 100%; height: 60px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; opacity: 0.6; border-top: 1px solid rgba(255,255,255,0.05);
-            font-size: 1.2rem;
-            padding-bottom: env(safe-area-inset-bottom); /* iPhoneのバーを考慮 */
+        /* 右サイドのボタン群 */
+        .side-btn {
+            width: 100%; height: 50px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; opacity: 0.6; font-size: 1.1rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
         }
+        .side-btn:last-child { padding-bottom: env(safe-area-inset-bottom); height: calc(50px + env(safe-area-inset-bottom)); }
 
         .input-area {
             flex-shrink: 0; 
@@ -101,7 +112,6 @@
         .log-body { flex: 1; font-size: 0.95rem; line-height: 1.6; }
         
         .hashtag { color: var(--accent-color); text-decoration: none; cursor: pointer; font-weight: bold; border-bottom: 1px dashed var(--accent-color); }
-
         .time-tag { font-size: 0.7rem; opacity: 0.4; margin-right: 10px; display: inline; }
         body.hide-time .time-tag { display: none; }
         .log-img { display: block; max-width: 140px; max-height: 140px; border-radius: 8px; margin-top: 10px; }
@@ -124,6 +134,12 @@
         <button style="background:#800; color:#fff;" onclick="deleteConfirm()">削除</button>
         <button style="background:#444; color:#fff; margin-top:10px;" onclick="closeMenu()">キャンセル</button>
     </div>
+</div>
+
+<div id="tag-cloud-panel" onclick="this.style.display='none'">
+    <div class="tag-cloud-title">BOUQUET TAGS</div>
+    <div id="tag-cloud-content" onclick="event.stopPropagation()"></div>
+    <div style="margin-top:40px; opacity:0.3; font-size:0.7rem;">CLOSE</div>
 </div>
 
 <div class="app-wrapper">
@@ -159,9 +175,8 @@
         <div id="log-container"></div>
         <div id="calendar-index">
             <div id="date-list-wrapper"></div>
-            <div class="search-trigger" onclick="toggleSearchBar()">
-                <span>🔍</span>
-            </div>
+            <div class="side-btn" onclick="showTagCloud()">＃</div>
+            <div class="side-btn" onclick="toggleSearchBar()">🔍</div>
         </div>
     </div>
 
@@ -200,13 +215,57 @@
     }
     window.addEventListener('resize', updateHeight);
 
+    // タグクラウドを表示
+    function showTagCloud() {
+        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        const tagMap = {};
+        
+        // 全ログからタグを抽出してカウント
+        logs.forEach(l => {
+            const tags = l.text.match(/[#＃][^\s#＃]+/g);
+            if (tags) {
+                tags.forEach(t => {
+                    const cleanTag = t.substring(1);
+                    tagMap[cleanTag] = (tagMap[cleanTag] || 0) + 1;
+                });
+            }
+        });
+
+        const cloudContent = document.getElementById('tag-cloud-content');
+        cloudContent.innerHTML = '';
+        
+        // タグを個数順に並び替え
+        const sortedTags = Object.entries(tagMap).sort((a, b) => b[1] - a[1]);
+
+        if (sortedTags.length === 0) {
+            cloudContent.innerHTML = '<p style="opacity:0.5; font-size:0.9rem;">タグが見つかりません</p>';
+        }
+
+        sortedTags.forEach(([tag, count]) => {
+            const span = document.createElement('span');
+            span.className = 'cloud-tag';
+            // 個数に応じてフォントサイズを可変にする (12px〜32px)
+            const size = Math.min(Math.max(count * 4 + 12, 12), 32);
+            span.style.fontSize = size + 'px';
+            span.style.opacity = Math.min(0.4 + (count * 0.1), 1);
+            span.innerText = `#${tag}`;
+            span.onclick = () => {
+                setSearchValue(tag);
+                document.getElementById('tag-cloud-panel').style.display = 'none';
+            };
+            cloudContent.appendChild(span);
+        });
+
+        document.getElementById('tag-cloud-panel').style.display = 'block';
+    }
+
     function toggleSearchBar() {
         if (searchBar.style.display === 'flex') {
             clearSearch();
             searchBar.style.display = 'none';
         } else {
             searchBar.style.display = 'flex';
-            searchInput.focus(); // 入力欄に自動フォーカス
+            searchInput.focus();
         }
     }
 
