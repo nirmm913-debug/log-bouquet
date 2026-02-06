@@ -13,6 +13,7 @@
             --text-color: #f5f5dc;
             --accent-color: #d4af37;
             --app-height: 100%;
+            --index-width: 55px;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
@@ -21,8 +22,7 @@
             width: 100%; height: var(--app-height);
             background-color: var(--bg-color); color: var(--text-color);
             font-family: -apple-system, sans-serif;
-            overflow: hidden; 
-            position: fixed;
+            overflow: hidden; position: fixed;
         }
 
         .app-wrapper {
@@ -36,138 +36,113 @@
             display: flex; justify-content: space-between; align-items: center;
             border-bottom: 1px solid rgba(255,255,255,0.1);
             background: var(--bg-color);
+            z-index: 1000;
         }
         header h1 { font-size: 1.1rem; font-weight: 300; letter-spacing: 2px; margin: 0; cursor: pointer; }
 
-        /* 月選択パネル（新設） */
-        #month-jump-panel {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 600;
-            padding: 100px 40px; text-align: center; overflow-y: auto;
-            backdrop-filter: blur(10px);
-        }
-        .jump-item { display: block; padding: 15px; font-size: 1.2rem; color: var(--text-color); cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
-
-        #tag-cloud-panel {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 500;
-            padding: 100px 40px; text-align: center; overflow-y: auto;
-            backdrop-filter: blur(10px);
-        }
-        .tag-cloud-title { color: var(--accent-color); font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 20px; opacity: 0.8; }
-        .cloud-tag { display: inline-block; margin: 8px; cursor: pointer; color: var(--text-color); transition: 0.2s; }
+        /* ヘッダーのアイコン群 */
+        .header-icons { display: flex; gap: 20px; align-items: center; }
+        .h-btn { cursor: pointer; opacity: 0.6; font-size: 1.3rem; transition: 0.2s; }
+        .h-btn:active { opacity: 1; transform: scale(1.1); }
 
         .main-content {
-            flex: 1; display: flex; overflow: hidden;
+            flex: 1; display: flex; overflow: hidden; position: relative;
         }
 
+        /* ログコンテナ：インデックスが開くと少し左にスライド */
         #log-container {
             flex: 1; overflow-y: auto; padding: 20px;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             -webkit-overflow-scrolling: touch;
-            scroll-behavior: smooth;
         }
 
+        /* インデックスバー：初期状態は画面右に隠れている */
         #calendar-index {
-            width: 45px; flex-shrink: 0; background: rgba(0, 0, 0, 0.2);
+            position: absolute; right: 0; top: 0; bottom: 0;
+            width: var(--index-width); background: rgba(0, 0, 0, 0.4);
             display: flex; flex-direction: column; align-items: center; 
-            border-left: 1px solid rgba(255,255,255,0.05);
-            font-family: monospace; font-size: 0.6rem; color: var(--accent-color);
+            border-left: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(15px);
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 500;
         }
+
+        /* 開いた時のスタイル */
+        body.index-open #calendar-index { transform: translateX(0); }
+        body.index-open #log-container { transform: translateX(calc(var(--index-width) * -0.5)); opacity: 0.5; }
 
         #date-list-wrapper {
             flex: 1; width: 100%; overflow-y: auto;
             display: flex; flex-direction: column; align-items: center;
+            padding: 10px 0;
         }
 
         .side-btn {
-            width: 100%; height: 50px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; opacity: 0.6; font-size: 1.1rem;
-            border-top: 1px solid rgba(255,255,255,0.05);
-        }
-        .side-btn:last-child { padding-bottom: env(safe-area-inset-bottom); height: calc(50px + env(safe-area-inset-bottom)); }
-
-        .input-area {
-            flex-shrink: 0; 
-            padding: 15px 20px calc(15px + env(safe-area-inset-bottom));
-            background: rgba(0,0,0,0.3); backdrop-filter: blur(10px);
-            display: flex; gap: 10px; align-items: center;
+            width: 100%; height: 60px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; opacity: 0.5; font-size: 0.7rem; letter-spacing: 1px;
             border-top: 1px solid rgba(255,255,255,0.1);
         }
 
-        #log-input { flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; padding: 12px 15px; color: white; outline: none; font-size: 16px; }
-        #log-input.editing-now { border: 1px solid var(--accent-color); background: rgba(212, 175, 55, 0.1); }
+        .footer-nav {
+            padding-bottom: env(safe-area-inset-bottom);
+            background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .input-area { padding: 12px 15px; display: flex; gap: 12px; align-items: center; }
+        #log-input { flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 10px 18px; color: white; outline: none; font-size: 16px; }
 
-        .icon-btn { color: var(--accent-color); font-size: 1.4rem; cursor: pointer; background: none; border: none; padding: 0; display: flex; align-items: center; }
-        #img-preview { width: 30px; height: 30px; border-radius: 4px; object-fit: cover; display: none; }
+        /* インデックス内アイテム */
+        .index-item { padding: 10px 0; width: 100%; text-align: center; opacity: 0.4; font-size: 0.7rem; font-family: monospace; }
+        .index-month { padding: 15px 0 5px; width: 100%; text-align: center; color: var(--accent-color); font-weight: bold; font-size: 0.8rem; }
         
-        .index-item { padding: 10px 0; width: 100%; text-align: center; opacity: 0.5; cursor: pointer; }
-        .index-month { padding: 15px 0 5px; width: 100%; text-align: center; opacity: 0.9; font-weight: bold; color: var(--text-color); border-bottom: 1px solid rgba(212, 175, 55, 0.3); margin-bottom: 5px; font-size: 0.7rem; }
-        
-        .month-divider { margin: 40px 0 20px; text-align: center; position: relative; scroll-margin-top: 20px; }
-        .month-divider span { background: var(--bg-color); padding: 0 15px; font-size: 0.8rem; letter-spacing: 3px; color: var(--accent-color); font-weight: bold; position: relative; z-index: 1; }
-        .month-divider::after { content: ""; position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: rgba(212, 175, 55, 0.2); z-index: 0; }
+        /* 本文デザイン */
+        .month-divider { margin: 50px 0 30px; text-align: center; position: relative; scroll-margin-top: 20px; }
+        .month-divider span { background: var(--bg-color); padding: 0 20px; font-size: 0.85rem; letter-spacing: 4px; color: var(--accent-color); position: relative; z-index: 1; }
+        .month-divider::after { content: ""; position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: rgba(212, 175, 55, 0.15); }
 
-        .date-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--accent-color); margin: 20px 0 15px; opacity: 0.7; border-bottom: 1px solid rgba(212, 175, 55, 0.2); padding-bottom: 5px; scroll-margin-top: 20px; }
-        .log-item { display: flex; justify-content: space-between; margin-bottom: 18px; }
-        .log-body { flex: 1; font-size: 0.95rem; line-height: 1.6; }
-        
-        .hashtag { color: var(--accent-color); text-decoration: none; cursor: pointer; font-weight: bold; border-bottom: 1px dashed var(--accent-color); }
-        .time-tag { font-size: 0.7rem; opacity: 0.4; margin-right: 10px; display: inline; }
-        body.hide-time .time-tag { display: none; }
-        .log-img { display: block; max-width: 140px; max-height: 140px; border-radius: 8px; margin-top: 10px; }
-        .delete-btn { color: var(--accent-color); opacity: 0.3; cursor: pointer; padding-left: 15px; }
-        
-        #settings-panel { display: none; position: fixed; top: 100px; right: 60px; background: rgba(20, 20, 20, 0.95); padding: 20px; border-radius: 15px; z-index: 999; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); max-width: 220px; }
-        .setting-input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px; width: 100%; margin-bottom: 12px; border-radius: 5px; font-size: 0.8rem; }
+        .date-header { font-size: 0.75rem; color: var(--accent-color); margin: 30px 0 15px; opacity: 0.6; border-bottom: 1px solid rgba(212, 175, 55, 0.1); padding-bottom: 5px; scroll-margin-top: 20px; }
+        .log-item { margin-bottom: 20px; font-size: 0.95rem; line-height: 1.7; }
+        .time-tag { font-size: 0.7rem; opacity: 0.3; margin-right: 10px; }
+
+        /* 月間ジャンプパネル */
+        #month-jump-panel {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); z-index: 2000; padding: 100px 40px; text-align: center; backdrop-filter: blur(10px);
+        }
+        .jump-item { padding: 18px; font-size: 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-color); }
     </style>
 </head>
-<body class="show-time">
+<body>
 
 <div id="month-jump-panel" onclick="this.style.display='none'">
-    <div class="tag-cloud-title">SELECT MONTH</div>
+    <div style="color:var(--accent-color); margin-bottom:30px; letter-spacing:3px; font-size:0.8rem;">CHRONICLE</div>
     <div id="month-list-content"></div>
-</div>
-
-<div id="tag-cloud-panel" onclick="this.style.display='none'">
-    <div class="tag-cloud-title">BOUQUET TAGS</div>
-    <div id="tag-cloud-content" onclick="event.stopPropagation()"></div>
 </div>
 
 <div class="app-wrapper">
     <header>
-        <h1 onclick="clearSearch()">Log Bouquet</h1>
-        <div style="cursor:pointer; opacity:0.6; font-size:1.5rem;" onclick="toggleSettings()">＋</div>
+        <h1 onclick="location.reload()">Log Bouquet</h1>
+        <div class="header-icons">
+            <span class="h-btn" onclick="showMonthJump()">🗓</span>
+            <span class="h-btn" onclick="toggleIndex()" id="index-trigger">☷</span>
+            <span class="h-btn" onclick="alert('Settings (TBD)')">＋</span>
+        </div>
     </header>
 
-    <div id="settings-panel">
-        <label style="display:block;font-size:0.6rem;opacity:0.5;margin-bottom:4px;">Background</label>
-        <input type="text" id="bg-color-in" class="setting-input" onchange="autoApplyColors()">
-        <label style="display:block;font-size:0.6rem;opacity:0.5;margin-bottom:4px;">Text Color</label>
-        <input type="text" id="text-color-in" class="setting-input" onchange="autoApplyColors()">
-        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; margin-bottom:5px;">
-            <span style="opacity:0.7">Time Stamp</span>
-            <input type="checkbox" id="time-toggle" checked onchange="updateTimeDisplay()">
-        </div>
-    </div>
-
-    <div class="main-content">
+    <div class="main-content" id="swipe-zone">
         <div id="log-container"></div>
+        
         <div id="calendar-index">
             <div id="date-list-wrapper"></div>
-            <div class="side-btn" onclick="showMonthJump()">🗓</div>
-            <div class="side-btn" onclick="showTagCloud()">＃</div>
-            <div class="side-btn" onclick="toggleSearchBar()">🔍</div>
+            <div class="side-btn" onclick="toggleIndex()">CLOSE</div>
         </div>
     </div>
 
-    <div class="input-area" id="footer-input-area">
-        <label class="icon-btn">
-            <input type="file" id="img-input" accept="image/*" style="display:none;" onchange="previewImg(this)">
-            📷︎
-        </label>
-        <img id="img-preview">
-        <input type="text" id="log-input" placeholder="Release" autocomplete="off">
-        <button class="icon-btn" onclick="handleSend()">✧</button>
+    <div class="footer-nav">
+        <div class="input-area">
+            <input type="text" id="log-input" placeholder="Note..." autocomplete="off">
+            <span onclick="handleSend()" style="color:var(--accent-color); font-size:1.6rem; cursor:pointer;">✧</span>
+        </div>
     </div>
 </div>
 
@@ -175,63 +150,54 @@
     const container = document.getElementById('log-container');
     const input = document.getElementById('log-input');
     const dateListWrapper = document.getElementById('date-list-wrapper');
-    let currentBase64 = "";
+    const swipeZone = document.getElementById('swipe-zone');
 
-    // 月間ジャンプパネルの表示
-    function showMonthJump() {
-        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        const months = [...new Set(logs.map(l => {
-            const p = l.d.split('.');
-            return p[0] + '.' + p[1];
-        }))].sort().reverse();
-
-        const content = document.getElementById('month-list-content');
-        content.innerHTML = '';
-        months.forEach(m => {
-            const div = document.createElement('div');
-            div.className = 'jump-item';
-            div.innerText = m.replace('.', ' / ');
-            div.onclick = () => {
-                const target = document.getElementById('month-' + m);
-                if (target) target.scrollIntoView({behavior: 'smooth'});
-            };
-            content.appendChild(div);
-        });
-        document.getElementById('month-jump-panel').style.display = 'block';
+    // インデックスのトグル
+    function toggleIndex() {
+        document.body.classList.toggle('index-open');
+        const trigger = document.getElementById('index-trigger');
+        trigger.style.opacity = document.body.classList.contains('index-open') ? "1" : "0.6";
     }
+
+    // スワイプ検出
+    let startX = 0;
+    swipeZone.addEventListener('touchstart', e => { startX = e.touches[0].clientX; });
+    swipeZone.addEventListener('touchend', e => {
+        let endX = e.changedTouches[0].clientX;
+        let diff = startX - endX;
+        if (diff > 60) document.body.classList.add('index-open'); // 左スワイプ
+        if (diff < -60) document.body.classList.remove('index-open'); // 右スワイプ
+    });
 
     function refresh() {
         container.innerHTML = '';
         const allLogs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        
-        let lastDate = ""; 
-        let lastMonth = ""; 
-        let dateList = [];
+        let lastDate = ""; let lastMonth = ""; let dateList = [];
 
-        allLogs.forEach((l, idx) => {
+        allLogs.forEach((l) => {
             const parts = l.d.split('.');
             const currentMonth = parts[0] + '.' + parts[1];
 
             if (currentMonth !== lastMonth) {
-                const monthDiv = document.createElement('div');
-                monthDiv.className = 'month-divider';
-                monthDiv.id = 'month-' + currentMonth; // ジャンプ用のID
-                monthDiv.innerHTML = `<span>${currentMonth.replace('.',' / ')}</span>`;
-                container.appendChild(monthDiv);
+                const mDiv = document.createElement('div');
+                mDiv.className = 'month-divider';
+                mDiv.id = 'month-' + currentMonth;
+                mDiv.innerHTML = `<span>${currentMonth.replace('.',' / ')}</span>`;
+                container.appendChild(mDiv);
                 lastMonth = currentMonth;
             }
 
             if (l.d !== lastDate) {
-                const div = document.createElement('div');
-                div.id = 'date-' + l.d; div.className = 'date-header';
-                div.innerHTML = `<span>${l.d}</span>`;
-                container.appendChild(div);
+                const dDiv = document.createElement('div');
+                dDiv.id = 'date-' + l.d; dDiv.className = 'date-header';
+                dDiv.innerText = l.d;
+                container.appendChild(dDiv);
                 lastDate = l.d; dateList.push(l.d);
             }
+
             const item = document.createElement('div');
             item.className = 'log-item';
-            let imgHtml = l.img ? `<img src="${l.img}" class="log-img">` : '';
-            item.innerHTML = `<div class="log-body"><span class="time-tag">${l.t}</span>${l.text}${imgHtml}</div>`;
+            item.innerHTML = `<span class="time-tag">${l.t}</span>${l.text}`;
             container.appendChild(item);
         });
         updateIndex(dateList);
@@ -241,58 +207,59 @@
     function updateIndex(dates) {
         dateListWrapper.innerHTML = '';
         let lastMonth = "";
-        dates.slice(-15).forEach(date => { // 直近15日分を表示
-            const parts = date.split('.');
-            const month = parts[1];
-            if (month !== lastMonth) {
-                const mDiv = document.createElement('div');
-                mDiv.className = 'index-month';
-                mDiv.innerText = month.padStart(2, '0');
-                dateListWrapper.appendChild(mDiv);
-                lastMonth = month;
+        dates.forEach(date => {
+            const p = date.split('.');
+            if (p[1] !== lastMonth) {
+                const m = document.createElement('div');
+                m.className = 'index-month';
+                m.innerText = p[1].padStart(2, '0');
+                dateListWrapper.appendChild(m);
+                lastMonth = p[1];
             }
-            const item = document.createElement('div');
-            item.className = 'index-item';
-            item.innerText = parts[2].padStart(2, '0');
-            item.onclick = () => {
+            const d = document.createElement('div');
+            d.className = 'index-item';
+            d.innerText = p[2].padStart(2, '0');
+            d.onclick = (e) => {
+                e.stopPropagation();
                 document.getElementById('date-' + date).scrollIntoView({behavior: 'smooth'});
             };
-            dateListWrapper.appendChild(item);
+            dateListWrapper.appendChild(d);
         });
     }
 
     function handleSend() {
         const text = input.value.trim();
-        if (!text && !currentBase64) return;
+        if (!text) return;
         const now = new Date();
         const d = now.getFullYear() + '.' + (now.getMonth()+1) + '.' + now.getDate();
         const t = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-        logs.push({ d, t, text, img: currentBase64 });
+        logs.push({ d, t, text });
         localStorage.setItem('myLogs', JSON.stringify(logs));
-        input.value = ''; currentBase64 = "";
-        document.getElementById('img-preview').style.display = 'none';
+        input.value = '';
         refresh();
     }
 
-    // --- その他、以前の機能（プレビュー、設定等）は維持 ---
-    function toggleSettings() {
-        const p = document.getElementById('settings-panel');
-        p.style.display = (p.style.display === 'block') ? 'none' : 'block';
-    }
-    function previewImg(inputEl) {
-        if (inputEl.files && inputEl.files[0]) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                currentBase64 = e.target.result;
-                document.getElementById('img-preview').src = currentBase64;
-                document.getElementById('img-preview').style.display = 'block';
+    function showMonthJump() {
+        const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        const months = [...new Set(logs.map(l => l.d.split('.').slice(0,2).join('.')))].sort().reverse();
+        const content = document.getElementById('month-list-content');
+        content.innerHTML = '';
+        months.forEach(m => {
+            const div = document.createElement('div');
+            div.className = 'jump-item';
+            div.innerText = m.replace('.', ' / ');
+            div.onclick = () => {
+                document.getElementById('month-' + m).scrollIntoView({behavior: 'smooth'});
+                document.getElementById('month-jump-panel').style.display = 'none';
             };
-            reader.readAsDataURL(inputEl.files[0]);
-        }
+            content.appendChild(div);
+        });
+        document.getElementById('month-jump-panel').style.display = 'block';
     }
+
     window.onload = refresh;
-    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
+    input.addEventListener('keypress', e => { if (e.key === 'Enter') handleSend(); });
 </script>
 </body>
 </html>
