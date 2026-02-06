@@ -61,7 +61,19 @@
         }
         .tag-cloud-title { color: var(--accent-color); font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 20px; opacity: 0.8; }
         .cloud-tag { display: inline-block; margin: 8px; cursor: pointer; color: var(--text-color); transition: 0.2s; }
-        .cloud-tag:active { transform: scale(0.9); }
+
+        /* 花吹雪エフェクト用スタイル */
+        .flower-particle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            font-size: 24px;
+            animation: flower-fall linear forwards;
+        }
+        @keyframes flower-fall {
+            0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) rotate(360deg); opacity: 0; }
+        }
 
         .main-content {
             flex: 1; display: flex; overflow: hidden;
@@ -85,7 +97,6 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* 右サイドのボタン群 */
         .side-btn {
             width: 100%; height: 50px; display: flex; align-items: center; justify-content: center;
             cursor: pointer; opacity: 0.6; font-size: 1.1rem;
@@ -215,12 +226,27 @@
     }
     window.addEventListener('resize', updateHeight);
 
-    // タグクラウドを表示
+    // 花吹雪エフェクト
+    function launchFlowers() {
+        const flowers = ['🌸', '🌼', '🌺', '🌷', '✨', '💐'];
+        const count = 30;
+        for (let i = 0; i < count; i++) {
+            const f = document.createElement('div');
+            f.className = 'flower-particle';
+            f.innerText = flowers[Math.floor(Math.random() * flowers.length)];
+            f.style.left = Math.random() * 100 + 'vw';
+            f.style.top = '110vh'; // 下から
+            f.style.setProperty('--dx', (Math.random() - 0.5) * 200 + 'px');
+            f.style.setProperty('--dy', -(Math.random() * 800 + 400) + 'px');
+            f.style.animationDuration = (Math.random() * 2 + 2) + 's';
+            document.body.appendChild(f);
+            setTimeout(() => f.remove(), 4000);
+        }
+    }
+
     function showTagCloud() {
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         const tagMap = {};
-        
-        // 全ログからタグを抽出してカウント
         logs.forEach(l => {
             const tags = l.text.match(/[#＃][^\s#＃]+/g);
             if (tags) {
@@ -230,21 +256,15 @@
                 });
             }
         });
-
         const cloudContent = document.getElementById('tag-cloud-content');
         cloudContent.innerHTML = '';
-        
-        // タグを個数順に並び替え
         const sortedTags = Object.entries(tagMap).sort((a, b) => b[1] - a[1]);
-
         if (sortedTags.length === 0) {
             cloudContent.innerHTML = '<p style="opacity:0.5; font-size:0.9rem;">タグが見つかりません</p>';
         }
-
         sortedTags.forEach(([tag, count]) => {
             const span = document.createElement('span');
             span.className = 'cloud-tag';
-            // 個数に応じてフォントサイズを可変にする (12px〜32px)
             const size = Math.min(Math.max(count * 4 + 12, 12), 32);
             span.style.fontSize = size + 'px';
             span.style.opacity = Math.min(0.4 + (count * 0.1), 1);
@@ -255,7 +275,6 @@
             };
             cloudContent.appendChild(span);
         });
-
         document.getElementById('tag-cloud-panel').style.display = 'block';
     }
 
@@ -356,12 +375,9 @@
         container.innerHTML = '';
         const allLogs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         const query = searchInput.value.trim().toLowerCase();
-        
         document.getElementById('search-clear').style.display = query ? 'inline' : 'none';
-
         const logsToShow = allLogs.map((l, originalIdx) => ({...l, originalIdx}))
             .filter(l => !query || l.text.toLowerCase().includes(query));
-
         let lastDate = ""; let dateList = [];
         logsToShow.forEach((l) => {
             if (l.d !== lastDate) {
@@ -388,8 +404,18 @@
         const d = now.getFullYear() + '.' + (now.getMonth()+1) + '.' + now.getDate();
         const t = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+        
+        // 今日のログ数をカウント
+        const todayCount = logs.filter(l => l.d === d).length;
+        
         logs.push({ d, t, text, img: currentBase64 });
         localStorage.setItem('myLogs', JSON.stringify(logs));
+        
+        // 10個溜まったらエフェクト！
+        if (todayCount + 1 >= 10) {
+            launchFlowers();
+        }
+
         input.value = ''; currentBase64 = "";
         document.getElementById('img-preview').style.display = 'none';
         refresh();
