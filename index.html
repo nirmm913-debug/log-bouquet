@@ -37,15 +37,10 @@
         .header-icons { display: flex; gap: 20px; align-items: center; }
         .h-btn { cursor: pointer; opacity: 0.6; transition: 0.2s; line-height: 1; }
 
-        /* 検索バーとオーバーレイ */
-        #search-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 800; background: transparent;
-        }
         .search-area {
             display: none; background: rgba(0, 0, 0, 0.4); padding: 10px 20px;
             align-items: center; gap: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(15px); position: relative; z-index: 900;
+            backdrop-filter: blur(5px);
         }
         #search-input {
             flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
@@ -98,10 +93,10 @@
         body.hide-time .time-tag { display: none; }
         .edit-trigger { color: var(--accent-color); opacity: 0.3; cursor: pointer; padding-left: 15px; }
 
-        /* 設定パネルとオーバーレイ */
+        /* 設定パネルと背景カバー */
         #settings-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1999; background: transparent;
+            z-index: 1999; background: rgba(0,0,0,0.1); /* どこでも閉じられるための透明板 */
         }
         #settings-panel { 
             display: none; position: fixed; top: 80px; right: 20px; 
@@ -150,7 +145,6 @@
 </div>
 
 <div id="settings-overlay" onclick="toggleSettings()"></div>
-<div id="search-overlay" onclick="toggleSearchBar()"></div>
 
 <div class="app-wrapper">
     <header>
@@ -164,7 +158,7 @@
     <div class="search-area" id="search-bar">
         <span style="font-size:0.8rem; opacity:0.5;">🔍</span>
         <input type="text" id="search-input" placeholder="ログを検索..." oninput="refresh()" autocomplete="off">
-        <span style="cursor:pointer; font-size:0.8rem;" onclick="toggleSearchBar()">✕</span>
+        <span style="cursor:pointer; font-size:0.8rem;" onclick="clearSearch()">✕</span>
     </div>
 
     <div id="settings-panel">
@@ -215,7 +209,6 @@
     const input = document.getElementById('log-input');
     const searchInput = document.getElementById('search-input');
     const searchBar = document.getElementById('search-bar');
-    const searchOverlay = document.getElementById('search-overlay');
     const dateListWrapper = document.getElementById('date-list-wrapper');
     const swipeZone = document.getElementById('swipe-zone');
     let currentBase64 = "";
@@ -243,26 +236,12 @@
         if (diff < -60) document.body.classList.remove('index-open');
     });
 
-    // 検索バーの開閉（外側タップ対応 ＋ 自動クリア）
     function toggleSearchBar() {
-        if (searchBar.style.display === 'flex') {
-            searchInput.value = '';
-            refresh();
-            searchBar.style.display = 'none';
-            searchOverlay.style.display = 'none';
-        } else {
-            searchBar.style.display = 'flex';
-            searchOverlay.style.display = 'block';
-            searchInput.focus();
-        }
+        if (searchBar.style.display === 'flex') { clearSearch(); searchBar.style.display = 'none'; }
+        else { searchBar.style.display = 'flex'; searchInput.focus(); }
     }
     function clearSearch() { searchInput.value = ''; refresh(); }
-    function setSearchValue(tag) { 
-        searchBar.style.display = 'flex'; 
-        searchOverlay.style.display = 'block';
-        searchInput.value = tag; 
-        refresh(); 
-    }
+    function setSearchValue(tag) { searchBar.style.display = 'flex'; searchInput.value = tag; refresh(); }
 
     function refresh() {
         container.innerHTML = '';
@@ -419,6 +398,7 @@
         reader.readAsDataURL(el.files[0]);
     }
 
+    // 設定パネルの開閉（外側タップ対応）
     function toggleSettings() {
         const p = document.getElementById('settings-panel');
         const ov = document.getElementById('settings-overlay');
