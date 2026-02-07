@@ -37,6 +37,7 @@
         .header-icons { display: flex; gap: 20px; align-items: center; }
         .h-btn { cursor: pointer; opacity: 0.6; transition: 0.2s; line-height: 1; }
 
+        /* 検索エリアのスタイル */
         .search-area {
             display: none; background: rgba(0, 0, 0, 0.4); padding: 10px 20px;
             align-items: center; gap: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -45,6 +46,9 @@
         #search-input {
             flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 10px; padding: 6px 12px; color: white; font-size: 0.85rem; outline: none;
+        }
+        .search-close-btn { 
+            cursor: pointer; font-size: 0.9rem; padding: 5px 10px; opacity: 0.7; 
         }
 
         .main-content { flex: 1; display: flex; overflow: hidden; position: relative; }
@@ -96,7 +100,7 @@
         /* 設定パネルと背景カバー */
         #settings-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1999; background: rgba(0,0,0,0.1); /* どこでも閉じられるための透明板 */
+            z-index: 1999; background: rgba(0,0,0,0.1);
         }
         #settings-panel { 
             display: none; position: fixed; top: 80px; right: 20px; 
@@ -148,7 +152,7 @@
 
 <div class="app-wrapper">
     <header>
-        <h1 onclick="clearSearch()">Log Bouquet</h1>
+        <h1 onclick="clearSearchAndClose()">Log Bouquet</h1>
         <div class="header-icons">
             <span class="h-btn" onclick="toggleIndex()" id="index-trigger" style="font-size: 1.6rem; font-weight: bold;">≡</span>
             <span class="h-btn" onclick="toggleSettings()" style="font-size: 1.3rem;">＋</span>
@@ -158,7 +162,7 @@
     <div class="search-area" id="search-bar">
         <span style="font-size:0.8rem; opacity:0.5;">🔍</span>
         <input type="text" id="search-input" placeholder="ログを検索..." oninput="refresh()" autocomplete="off">
-        <span style="cursor:pointer; font-size:0.8rem;" onclick="clearSearch()">✕</span>
+        <span class="search-close-btn" onclick="clearSearchAndClose()">✕</span>
     </div>
 
     <div id="settings-panel">
@@ -236,12 +240,28 @@
         if (diff < -60) document.body.classList.remove('index-open');
     });
 
+    // 検索バーを表示/非表示
     function toggleSearchBar() {
-        if (searchBar.style.display === 'flex') { clearSearch(); searchBar.style.display = 'none'; }
-        else { searchBar.style.display = 'flex'; searchInput.focus(); }
+        if (searchBar.style.display === 'flex') {
+            clearSearchAndClose();
+        } else {
+            searchBar.style.display = 'flex';
+            searchInput.focus();
+        }
     }
-    function clearSearch() { searchInput.value = ''; refresh(); }
-    function setSearchValue(tag) { searchBar.style.display = 'flex'; searchInput.value = tag; refresh(); }
+
+    // 検索をリセットしてバーを閉じる
+    function clearSearchAndClose() {
+        searchInput.value = '';
+        refresh();
+        searchBar.style.display = 'none';
+    }
+
+    function setSearchValue(tag) {
+        searchBar.style.display = 'flex';
+        searchInput.value = tag;
+        refresh();
+    }
 
     function refresh() {
         container.innerHTML = '';
@@ -398,7 +418,6 @@
         reader.readAsDataURL(el.files[0]);
     }
 
-    // 設定パネルの開閉（外側タップ対応）
     function toggleSettings() {
         const p = document.getElementById('settings-panel');
         const ov = document.getElementById('settings-overlay');
