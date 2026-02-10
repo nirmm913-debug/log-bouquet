@@ -19,8 +19,7 @@
         
         html, body {
             margin: 0; padding: 0; 
-            width: 100%; 
-            height: var(--app-height); /* ここが 100% になっていたらこれに変える */
+            width: 100%; height: var(--app-height);
             background-color: var(--bg-color); color: var(--text-color);
             font-family: -apple-system, sans-serif;
             overflow: hidden; position: fixed;
@@ -38,7 +37,6 @@
         .header-icons { display: flex; gap: 20px; align-items: center; }
         .h-btn { cursor: pointer; opacity: 0.6; transition: 0.2s; line-height: 1; }
 
-        /* 検索エリア */
         .search-area {
             display: none; background: rgba(0, 0, 0, 0.4); padding: 10px 20px;
             align-items: center; gap: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -89,14 +87,15 @@
 
         .date-header { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--accent-color); margin: 30px 0 10px; opacity: 0.6; border-bottom: 1px solid rgba(212, 175, 55, 0.1); padding-bottom: 5px; scroll-margin-top: 20px; }
         .log-item { display: flex; justify-content: space-between; margin-bottom: 20px; }
-        .log-body { flex: 1; font-size: 0.95rem; line-height: 1.7; }
+        .log-body { flex: 1; font-size: 0.95rem; line-height: 1.7; cursor: pointer; } /* 鉛筆がないのでcursor追加 */
         .log-img { display: block; max-width: 140px; border-radius: 8px; margin-top: 10px; }
         .hashtag { color: var(--accent-color); font-weight: bold; cursor: pointer; }
         .time-tag { font-size: 0.7rem; opacity: 0.3; margin-right: 10px; }
         body.hide-time .time-tag { display: none; }
-        .edit-trigger { color: var(--accent-color); opacity: 0.3; cursor: pointer; padding-left: 15px; }
+        
+        /* 長押し導入により鉛筆アイコンは非表示 */
+        .edit-trigger { display: none; }
 
-        /* 設定パネル */
         #settings-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1999; background: rgba(0,0,0,0.1);
@@ -121,13 +120,11 @@
         .jump-item, .cloud-tag { padding: 15px; display: inline-block; color: var(--text-color); }
         .index-item { padding: 8px 0; width: 100%; text-align: center; opacity: 0.4; font-size: 0.65rem; font-family: monospace; cursor: pointer; white-space: pre; }
 
-        /* フッター・入力エリア */
         .footer-nav { padding-bottom: env(safe-area-inset-bottom); background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.1); }
         .input-area { padding: 12px 15px; display: flex; gap: 12px; align-items: center; }
         #log-input { flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 10px 18px; color: white; outline: none; font-size: 16px; }
         #log-input.editing-now { border: 1px solid var(--accent-color); background: rgba(212, 175, 55, 0.1); }
 
-        /* ハッシュタグサジェスト */
         .suggest-area {
             display: none; padding: 10px 15px; background: rgba(20, 20, 20, 0.8); gap: 8px; 
             overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;
@@ -232,6 +229,15 @@
     let selectedIdx = null;
     let editingIdx = null;
 
+    // --- 長押し判定用の追加 ---
+    let longTouchTimer;
+    function touchStart(idx) {
+        longTouchTimer = setTimeout(() => { openMenu(idx); }, 600);
+    }
+    function touchEnd() {
+        clearTimeout(longTouchTimer);
+    }
+
     function getDayInfo(dateStr) {
         const d = new Date(dateStr.replace(/\./g, '/'));
         const daysEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -305,7 +311,17 @@
             const item = document.createElement('div');
             item.className = 'log-item';
             let imgHtml = l.img ? `<img src="${l.img}" class="log-img">` : '';
-            item.innerHTML = `<div class="log-body"><span class="time-tag">${l.t}</span>${formatText(l.text)}${imgHtml}</div><div class="edit-trigger" onclick="openMenu(${l.originalIdx})">✎</div>`;
+            
+            // ログの本文に長押しイベントをセット
+            item.innerHTML = `
+                <div class="log-body" 
+                     ontouchstart="touchStart(${l.originalIdx})" 
+                     ontouchend="touchEnd()" 
+                     ontouchmove="touchEnd()"
+                     onmousedown="touchStart(${l.originalIdx})" 
+                     onmouseup="touchEnd()">
+                    <span class="time-tag">${l.t}</span>${formatText(l.text)}${imgHtml}
+                </div>`;
             container.appendChild(item);
         });
         updateIndex(dateList);
@@ -351,7 +367,6 @@
         suggestArea.style.display = 'none'; refresh();
     }
 
-    /* サジェスト用ロジック */
     function getAllTags() {
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         const tags = [];
@@ -537,20 +552,16 @@
     }
 
     window.onload = () => {
-        // --- ここから追加：高さ調整の魔法 ---
+        // キーボード対策の高さ調整
         const setAppHeight = () => {
-            // ビジュアルビューポート（実際に見えている範囲）の高さを取得
             const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
             document.documentElement.style.setProperty('--app-height', `${vh}px`);
         };
-        
-        // キーボードが出た時、消えた時、画面が回転した時に高さを再計算
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', setAppHeight);
             window.visualViewport.addEventListener('scroll', setAppHeight);
         }
         setAppHeight();
-        // --- ここまで ---
 
         const theme = JSON.parse(localStorage.getItem('myTheme'));
         if(theme) { document.getElementById('bg-color-in').value = theme.bg; document.getElementById('text-color-in').value = theme.txt; autoApplyColors(); }
