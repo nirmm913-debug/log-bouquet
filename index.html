@@ -19,7 +19,8 @@
         
         html, body {
             margin: 0; padding: 0; 
-            width: 100%; height: var(--app-height);
+            width: 100%; 
+            height: var(--app-height); /* ここが 100% になっていたらこれに変える */
             background-color: var(--bg-color); color: var(--text-color);
             font-family: -apple-system, sans-serif;
             overflow: hidden; position: fixed;
@@ -536,6 +537,21 @@
     }
 
     window.onload = () => {
+        // --- ここから追加：高さ調整の魔法 ---
+        const setAppHeight = () => {
+            // ビジュアルビューポート（実際に見えている範囲）の高さを取得
+            const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+            document.documentElement.style.setProperty('--app-height', `${vh}px`);
+        };
+        
+        // キーボードが出た時、消えた時、画面が回転した時に高さを再計算
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', setAppHeight);
+            window.visualViewport.addEventListener('scroll', setAppHeight);
+        }
+        setAppHeight();
+        // --- ここまで ---
+
         const theme = JSON.parse(localStorage.getItem('myTheme'));
         if(theme) { document.getElementById('bg-color-in').value = theme.bg; document.getElementById('text-color-in').value = theme.txt; autoApplyColors(); }
         const st = localStorage.getItem('showTime');
