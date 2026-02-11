@@ -37,6 +37,7 @@
         .header-icons { display: flex; gap: 20px; align-items: center; }
         .h-btn { cursor: pointer; opacity: 0.6; transition: 0.2s; line-height: 1; }
 
+        /* 検索エリア */
         .search-area {
             display: none; background: rgba(0, 0, 0, 0.4); padding: 10px 20px;
             align-items: center; gap: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -87,15 +88,14 @@
 
         .date-header { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--accent-color); margin: 30px 0 10px; opacity: 0.6; border-bottom: 1px solid rgba(212, 175, 55, 0.1); padding-bottom: 5px; scroll-margin-top: 20px; }
         .log-item { display: flex; justify-content: space-between; margin-bottom: 20px; }
-        .log-body { flex: 1; font-size: 0.95rem; line-height: 1.7; cursor: pointer; } /* 鉛筆がないのでcursor追加 */
+        .log-body { flex: 1; font-size: 0.95rem; line-height: 1.7; }
         .log-img { display: block; max-width: 140px; border-radius: 8px; margin-top: 10px; }
         .hashtag { color: var(--accent-color); font-weight: bold; cursor: pointer; }
         .time-tag { font-size: 0.7rem; opacity: 0.3; margin-right: 10px; }
         body.hide-time .time-tag { display: none; }
-        
-        /* 長押し導入により鉛筆アイコンは非表示 */
-        .edit-trigger { display: none; }
+        .edit-trigger { color: var(--accent-color); opacity: 0.3; cursor: pointer; padding-left: 15px; }
 
+        /* 設定パネル */
         #settings-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1999; background: rgba(0,0,0,0.1);
@@ -120,11 +120,13 @@
         .jump-item, .cloud-tag { padding: 15px; display: inline-block; color: var(--text-color); }
         .index-item { padding: 8px 0; width: 100%; text-align: center; opacity: 0.4; font-size: 0.65rem; font-family: monospace; cursor: pointer; white-space: pre; }
 
+        /* フッター・入力エリア */
         .footer-nav { padding-bottom: env(safe-area-inset-bottom); background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.1); }
         .input-area { padding: 12px 15px; display: flex; gap: 12px; align-items: center; }
         #log-input { flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 10px 18px; color: white; outline: none; font-size: 16px; }
         #log-input.editing-now { border: 1px solid var(--accent-color); background: rgba(212, 175, 55, 0.1); }
 
+        /* ハッシュタグサジェスト */
         .suggest-area {
             display: none; padding: 10px 15px; background: rgba(20, 20, 20, 0.8); gap: 8px; 
             overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;
@@ -162,9 +164,9 @@
     <header>
         <h1 onclick="clearSearchAndClose()">Log Bouquet</h1>
         <div class="header-icons">
-    <span class="h-btn" onclick="toggleSettings()" style="font-size: 1.3rem;">＋</span>
-    <span class="h-btn" onclick="toggleIndex()" id="index-trigger" style="font-size: 1.6rem; font-weight: bold;">≡</span>
-</div>
+            <span class="h-btn" onclick="toggleIndex()" id="index-trigger" style="font-size: 1.6rem; font-weight: bold;">≡</span>
+            <span class="h-btn" onclick="toggleSettings()" style="font-size: 1.3rem;">＋</span>
+        </div>
     </header>
 
     <div class="search-area" id="search-bar">
@@ -228,15 +230,6 @@
     let currentBase64 = "";
     let selectedIdx = null;
     let editingIdx = null;
-
-    // --- 長押し判定用の追加 ---
-    let longTouchTimer;
-    function touchStart(idx) {
-        longTouchTimer = setTimeout(() => { openMenu(idx); }, 600);
-    }
-    function touchEnd() {
-        clearTimeout(longTouchTimer);
-    }
 
     function getDayInfo(dateStr) {
         const d = new Date(dateStr.replace(/\./g, '/'));
@@ -311,17 +304,7 @@
             const item = document.createElement('div');
             item.className = 'log-item';
             let imgHtml = l.img ? `<img src="${l.img}" class="log-img">` : '';
-            
-            // ログの本文に長押しイベントをセット
-            item.innerHTML = `
-                <div class="log-body" 
-                     ontouchstart="touchStart(${l.originalIdx})" 
-                     ontouchend="touchEnd()" 
-                     ontouchmove="touchEnd()"
-                     onmousedown="touchStart(${l.originalIdx})" 
-                     onmouseup="touchEnd()">
-                    <span class="time-tag">${l.t}</span>${formatText(l.text)}${imgHtml}
-                </div>`;
+            item.innerHTML = `<div class="log-body"><span class="time-tag">${l.t}</span>${formatText(l.text)}${imgHtml}</div><div class="edit-trigger" onclick="openMenu(${l.originalIdx})">✎</div>`;
             container.appendChild(item);
         });
         updateIndex(dateList);
@@ -367,6 +350,7 @@
         suggestArea.style.display = 'none'; refresh();
     }
 
+    /* サジェスト用ロジック */
     function getAllTags() {
         const logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
         const tags = [];
@@ -552,17 +536,6 @@
     }
 
     window.onload = () => {
-        // キーボード対策の高さ調整
-        const setAppHeight = () => {
-            const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-            document.documentElement.style.setProperty('--app-height', `${vh}px`);
-        };
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', setAppHeight);
-            window.visualViewport.addEventListener('scroll', setAppHeight);
-        }
-        setAppHeight();
-
         const theme = JSON.parse(localStorage.getItem('myTheme'));
         if(theme) { document.getElementById('bg-color-in').value = theme.bg; document.getElementById('text-color-in').value = theme.txt; autoApplyColors(); }
         const st = localStorage.getItem('showTime');
