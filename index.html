@@ -536,6 +536,17 @@
     }
 
     window.onload = () => {
+        // iPhoneのキーボード対策：高さを自動調整する機能
+        const setAppHeight = () => {
+            const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+            document.documentElement.style.setProperty('--app-height', `${vh}px`);
+        };
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', setAppHeight);
+            window.visualViewport.addEventListener('scroll', setAppHeight);
+        }
+        setAppHeight();
+
         const theme = JSON.parse(localStorage.getItem('myTheme'));
         if(theme) { document.getElementById('bg-color-in').value = theme.bg; document.getElementById('text-color-in').value = theme.txt; autoApplyColors(); }
         const st = localStorage.getItem('showTime');
