@@ -308,7 +308,13 @@
             container.appendChild(item);
         });
         updateIndex(dateList);
-        if (!query) container.scrollTop = container.scrollHeight;
+        
+        // 検索中でなければ、少し遅延させて（画像読み込みを待って）一番下へ
+        if (!query) {
+            setTimeout(() => {
+                container.scrollTop = container.scrollHeight;
+            }, 100); // 0.1秒だけ待つ
+        }
     }
 
     function formatText(text) {
