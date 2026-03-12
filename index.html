@@ -367,7 +367,7 @@
         return tags;
     }
 
-    input.addEventListener('input', (e) => {
+    input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) handleSend(); });
         const val = e.target.value;
         const cursorPos = e.target.selectionStart;
         const textBeforeCursor = val.slice(0, cursorPos);
