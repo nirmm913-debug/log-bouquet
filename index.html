@@ -150,22 +150,7 @@
 
 <div id="settings-overlay" onclick="toggleSettings()"></div>
 
-<div class="app-wrapper">
-    <header>
-        <h1 onclick="clearSearchAndClose()">Log Bouquet</h1>
-        <div class="header-icons">
-            <span class="h-btn" onclick="toggleIndex()" id="index-trigger" style="font-size: 1.6rem; font-weight: bold;">≡</span>
-            <span class="h-btn" onclick="toggleSettings()" style="font-size: 1.3rem;">＋</span>
-        </div>
-    </header>
-
-    <div class="search-area" id="search-bar">
-        <span style="font-size:0.8rem; opacity:0.5;">🔍</span>
-        <input type="text" id="search-input" placeholder="ログを検索..." oninput="refresh()" autocomplete="off">
-        <span class="search-close-btn" onclick="clearSearchAndClose()">✕</span>
-    </div>
-
-    <div id="settings-panel">
+<div id="settings-panel">
         <label style="display:block;font-size:0.6rem;opacity:0.5;margin-bottom:4px;">Background</label>
         <input type="text" id="bg-color-in" class="setting-input" onchange="autoApplyColors()">
         <label style="display:block;font-size:0.6rem;opacity:0.5;margin-bottom:4px;">Text Color</label>
@@ -180,6 +165,21 @@
             Upload Logs (.json)
             <input type="file" accept=".json" style="display:none;" onchange="importData(event)">
         </label>
+    </div>
+
+<div class="app-wrapper">
+    <header>
+        <h1 onclick="clearSearchAndClose()">Log Bouquet</h1>
+        <div class="header-icons">
+            <span class="h-btn" onclick="toggleIndex()" id="index-trigger" style="font-size: 1.6rem; font-weight: bold;">≡</span>
+            <span class="h-btn" onclick="toggleSettings()" style="font-size: 1.3rem;">＋</span>
+        </div>
+    </header>
+
+    <div class="search-area" id="search-bar">
+        <span style="font-size:0.8rem; opacity:0.5;">🔍</span>
+        <input type="text" id="search-input" placeholder="ログを検索..." oninput="refresh()" autocomplete="off">
+        <span class="search-close-btn" onclick="clearSearchAndClose()">✕</span>
     </div>
 
     <div class="main-content" id="swipe-zone">
